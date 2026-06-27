@@ -10,8 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary: #4f46e5; --primary-hover: #4338ca;
@@ -243,21 +243,21 @@
     </nav>
 
     <script>
-        // --- KONFIGURASI FIREBASE CLOUD FIRESTORE SAJA ---
+        // --- KONFIGURASI FIREBASE REALTIME DATABASE (SINKRON DENGAN DASHBOARD) ---
         const firebaseConfig = {
-          apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
-          authDomain: "absensiwajah-ea3d3.firebaseapp.com",
-          projectId: "absensiwajah-ea3d3",
-          storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
-          messagingSenderId: "1054931924470",
-          appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
+            apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
+            authDomain: "absensiwajah-ea3d3.firebaseapp.com",
+            projectId: "absensiwajah-ea3d3",
+            storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
+            messagingSenderId: "1054931924470",
+            appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7",
+            databaseURL: "https://absensiwajah-ea3d3-default-rtdb.firebaseio.com"
         };
 
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const database = firebase.database();
 
         // --- MENDAPATKAN USER ID DARI DASHBOARD GURUKU ---
-        // Jika GuruKu memanggil: <iframe src="absensi.html?uid=12345">
         const urlParams = new URLSearchParams(window.location.search);
         let currentUserUid = urlParams.get('uid') || "GURU_DEMO_DEFAULT"; 
 
@@ -274,6 +274,7 @@
 
         let sesiHariIni = "";
         let sesiTanggalIni = ""; 
+        let sesiTanggalIso = ""; // Format YYYY-MM-DD untuk komunikasi dengan dashboard
         let sesiKelasIni = ""; 
         let sesiMapelIni = "";
         let siswaTelahAbsenSesiIni = new Set();
@@ -284,10 +285,8 @@
         let listenerSiswa = null;
         let listenerRiwayat = null;
 
-        // VARIABEL WHATSAPP
         let targetWA = localStorage.getItem("waTarget") || "";
 
-        // --- JALANKAN LANGSUNG KETIKA HALAMAN DIBUKA ---
         window.onload = () => {
             initSistemAbsen();
             initWA();
@@ -365,19 +364,23 @@
         }
 
         function ambilDataSiswaRealtime() {
-            if(listenerSiswa) listenerSiswa(); 
+            if(listenerSiswa) database.ref('siswa').off('value', listenerSiswa); 
 
-            listenerSiswa = db.collection("siswa").where("userId", "==", currentUserUid).onSnapshot((snapshot) => {
+            listenerSiswa = database.ref('siswa').on('value', (snapshot) => {
                 localSiswaCached = [];
-                snapshot.forEach((doc) => {
-                    let data = doc.data();
-                    localSiswaCached.push({ 
-                        id: doc.id, 
-                        nama: data.nama, 
-                        kelas: data.kelas ? data.kelas.toUpperCase() : "TANPA KELAS", 
-                        descriptor: data.descriptor 
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnapshot) => {
+                        let data = childSnapshot.val();
+                        if (data.userId === currentUserUid) {
+                            localSiswaCached.push({ 
+                                id: childSnapshot.key, 
+                                nama: data.nama, 
+                                kelas: data.kelas ? data.kelas.toUpperCase() : "TANPA KELAS", 
+                                descriptor: data.descriptor 
+                            });
+                        }
                     });
-                });
+                }
                 document.getElementById('totalSiswa').innerText = `${localSiswaCached.length} Data`;
                 
                 perbaruiDropdownKelasMasterSiswa();
@@ -393,30 +396,32 @@
         }
 
         function ambilDataRiwayatRealtime() {
-            if(listenerRiwayat) listenerRiwayat(); 
+            if(listenerRiwayat) database.ref('riwayat').off('value', listenerRiwayat); 
 
-            listenerRiwayat = db.collection("riwayat")
-                .where("userId", "==", currentUserUid)
-                .onSnapshot((snapshot) => {
-                    localRiwayatCached = [];
-                    snapshot.forEach((doc) => {
-                        let data = doc.data();
-                        localRiwayatCached.push({
-                            id: doc.id, nama: data.nama, kelas: data.kelas ? data.kelas.toUpperCase() : "TANPA KELAS", 
-                            hari: data.hari, mapel: data.mapel, tanggal: data.tanggal, waktu: data.waktu, status: data.status,
-                            timestamp: data.timestamp ? data.timestamp.toMillis() : Date.now()
-                        });
+            listenerRiwayat = database.ref('riwayat').on('value', (snapshot) => {
+                localRiwayatCached = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnapshot) => {
+                        let data = childSnapshot.val();
+                        if (data.userId === currentUserUid) {
+                            localRiwayatCached.push({
+                                id: childSnapshot.key, nama: data.nama, kelas: data.kelas ? data.kelas.toUpperCase() : "TANPA KELAS", 
+                                hari: data.hari, mapel: data.mapel, tanggal: data.tanggal, tanggalIso: data.tanggalIso, waktu: data.waktu, status: data.status,
+                                timestamp: data.timestamp || Date.now()
+                            });
+                        }
                     });
+                }
 
-                    localRiwayatCached.sort((a, b) => a.timestamp - b.timestamp);
+                localRiwayatCached.sort((a, b) => a.timestamp - b.timestamp);
 
-                    perbaruiDropdownFilterRiwayat();
-                    if(!document.getElementById('panelRiwayat').classList.contains('panel-hide')) {
-                        tampilkanRiwayat();
-                    }
-                }, err => {
-                    console.error("Riwayat snapshot error:", err);
-                });
+                perbaruiDropdownFilterRiwayat();
+                if(!document.getElementById('panelRiwayat').classList.contains('panel-hide')) {
+                    tampilkanRiwayat();
+                }
+            }, err => {
+                console.error("Riwayat snap error:", err);
+            });
         }
 
         async function startCamera() {
@@ -465,7 +470,7 @@
 
             setStatus("☁️ Menyimpan ke Cloud Privat...", "#e0f2fe", "#0369a1");
             
-            db.collection("siswa").add({
+            database.ref('siswa').push({
                 userId: currentUserUid,
                 nama: nama,
                 kelas: kelas,
@@ -527,7 +532,7 @@
 
         function hapusSiswa(id, nama) {
             if (confirm(`Hapus permanen data ${nama} dari Database Anda?`)) {
-                db.collection("siswa").doc(id).delete()
+                database.ref(`siswa/${id}`).remove()
                 .catch(err => alert("Gagal menghapus: " + err.message));
             }
         }
@@ -543,9 +548,10 @@
 
         // --- 4. ENGINE SCAN ABSENSI ---
         function mulaiProsesScan() {
-            const rawTanggal = document.getElementById('setupTanggal').value;
+            const rawTanggal = document.getElementById('setupTanggal').value; // Ini format YYYY-MM-DD
             if(!rawTanggal) return alert("Pilih tanggal pelaksanaan absensi terlebih dahulu!");
 
+            sesiTanggalIso = rawTanggal; 
             const dateObj = new Date(rawTanggal + "T00:00:00");
             sesiTanggalIni = dateObj.toLocaleDateString('id-ID'); 
             sesiHariIni = dateObj.toLocaleDateString('id-ID', { weekday: 'long' }); 
@@ -622,7 +628,7 @@
 
             if (sesiTanggalIni && sesiKelasIni && sesiMapelIni) {
                 let tanggal = sesiTanggalIni;
-                let batch = db.batch();
+                let updates = {};
                 let counterTidakHadir = 0;
 
                 setStatus("☁️ Menyusun Rekap Absensi Penuh...", "#fef9c3", "#854d0e");
@@ -636,17 +642,23 @@
                     );
 
                     if (!dataAda) {
-                        let docRef = db.collection("riwayat").doc();
-                        batch.set(docRef, {
+                        let pushKey = database.ref().child('riwayat').push().key;
+                        let payload = {
                             userId: currentUserUid, 
-                            nama: siswa.nama, kelas: sesiKelasIni, hari: sesiHariIni, mapel: sesiMapelIni, tanggal: tanggal,
-                            waktu: "-", status: "Tidak Hadir", timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                            nama: siswa.nama, kelas: sesiKelasIni, hari: sesiHariIni, mapel: sesiMapelIni, tanggal: tanggal, tanggalIso: sesiTanggalIso,
+                            waktu: "-", status: "Tidak Hadir", timestamp: Date.now()
+                        };
+                        
+                        // Dual-Write: Tulis ke log riwayat global dan pasok data ke absensi dashboard harian
+                        updates[`/riwayat/${pushKey}`] = payload;
+                        updates[`/absensi/${sesiTanggalIso}/${pushKey}`] = payload;
                         counterTidakHadir++;
                     }
                 });
 
-                if(counterTidakHadir > 0) await batch.commit();
+                if(counterTidakHadir > 0) {
+                    await database.ref().update(updates);
+                }
 
                 let dataSesiIni = localRiwayatCached.filter(item => item.hari === sesiHariIni && item.kelas === sesiKelasIni && item.mapel === sesiMapelIni && item.tanggal === tanggal);
                 let totalHadir = dataSesiIni.filter(item => item.status === "Hadir").length;
@@ -669,19 +681,32 @@
                 item.mapel === sesiMapelIni && item.tanggal === tanggal
             );
 
+            let updates = {};
+
             if (dataLamaSiswa) {
                 if (dataLamaSiswa.status === "Tidak Hadir") {
-                    db.collection("riwayat").doc(dataLamaSiswa.id).update({ waktu: waktu, status: "Terlambat" });
+                    updates[`/riwayat/${dataLamaSiswa.id}/waktu`] = waktu;
+                    updates[`/riwayat/${dataLamaSiswa.id}/status`] = "Terlambat";
+                    updates[`/absensi/${sesiTanggalIso}/${dataLamaSiswa.id}/waktu`] = waktu;
+                    updates[`/absensi/${sesiTanggalIso}/${dataLamaSiswa.id}/status`] = "Terlambat";
+                    
+                    database.ref().update(updates);
                     setStatus(`⚠️ TERLAMBAT: ${namaSiswa}`, "#ffedd5", "#c2410c");
                     if(logDiv.innerText.includes("Belum ada")) logDiv.innerHTML = "";
                     logDiv.innerHTML = `<div class="log-item" style="color: #c2410c;"><b>${waktu}</b> - ⚠️ ${namaSiswa} (Terlambat)</div>` + logDiv.innerHTML;
                 }
             } else {
-                db.collection("riwayat").add({
+                let pushKey = database.ref().child('riwayat').push().key;
+                let payload = {
                     userId: currentUserUid, 
-                    nama: namaSiswa, kelas: sesiKelasIni, hari: sesiHariIni, mapel: sesiMapelIni, tanggal: tanggal, waktu: waktu, status: "Hadir",
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                    nama: namaSiswa, kelas: sesiKelasIni, hari: sesiHariIni, mapel: sesiMapelIni, tanggal: tanggal, tanggalIso: sesiTanggalIso, waktu: waktu, status: "Hadir",
+                    timestamp: Date.now()
+                };
+                
+                updates[`/riwayat/${pushKey}`] = payload;
+                updates[`/absensi/${sesiTanggalIso}/${pushKey}`] = payload;
+                
+                database.ref().update(updates);
                 setStatus(`✅ HADIR: ${namaSiswa}`, "#dcfce7", "#166534");
                 if(logDiv.innerText.includes("Belum ada")) logDiv.innerHTML = "";
                 logDiv.innerHTML = `<div class="log-item"><b>${waktu}</b> - ${namaSiswa} (Kelas ${sesiKelasIni})</div>` + logDiv.innerHTML;
@@ -762,7 +787,6 @@
         }
 
         // --- 6. EKSPOR KE WHATSAPP, EXCEL, DAN PDF ---
-
         function initWA() {
             if(targetWA) {
                 document.getElementById('waSetupArea').style.display = 'none';
@@ -873,10 +897,14 @@
 
         async function hapusSemuaRiwayat() {
             if(confirm("Yakin ingin mengosongkan seluruh data riwayat Anda di Cloud secara permanen? Data milik guru lain atau data master siswa tidak akan terpengaruh.")) {
-                let batch = db.batch();
-                let querySnapshot = await db.collection("riwayat").where("userId", "==", currentUserUid).get();
-                querySnapshot.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
+                let updates = {};
+                localRiwayatCached.forEach(item => {
+                    updates[`/riwayat/${item.id}`] = null;
+                    if(item.tanggalIso) {
+                        updates[`/absensi/${item.tanggalIso}/${item.id}`] = null;
+                    }
+                });
+                await database.ref().update(updates);
                 alert("Seluruh riwayat privat Anda berhasil dibersihkan!");
             }
         }
