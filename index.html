@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuruKu - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-sidebar: #152033;
+            --bg-active: #00b4d8;
+            --bg-header: #0f172a;
+            --text-color: #ffffff;
+            --text-muted: #94a3b8;
+            --bg-main: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Container Utama */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* --- SIDEBAR STYLE --- */
+        .sidebar {
+            width: 280px;
+            background-color: var(--bg-sidebar);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            background-color: var(--bg-header);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-brand i { font-size: 1.4rem; }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 0;
+            flex-grow: 1;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+            cursor: pointer;
+        }
+
+        .menu-item i { width: 20px; text-align: center; font-size: 1.1rem; }
+        .menu-item:hover { background-color: rgba(255, 255, 255, 0.05); color: var(--text-color); }
+        .menu-item.active { background-color: var(--bg-active); color: var(--text-color); font-weight: 500; }
+
+        /* --- MAIN CONTENT STYLE --- */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100vh; /* Pastikan tinggi konten pas layar */
+        }
+
+        .mobile-header {
+            background-color: var(--bg-sidebar);
+            color: white;
+            padding: 15px 20px;
+            display: none; 
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 90;
+        }
+
+        .menu-toggle-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; }
+
+        /* Area Konten */
+        .content-body {
+            padding: 15px; /* Dikecilkan sedikit agar iframe lebih luas */
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Mencegah double scrollbar */
+        }
+
+        /* Styling Khusus Iframe */
+        #appFrame {
+            flex-grow: 1;
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 99;
+        }
+
+        /* --- RESPONSIVE LAYOUT --- */
+        @media (max-width: 768px) {
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; top: 0; left: -280px; bottom: 0; height: 100vh; }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+            .content-body { padding: 10px; }
+            #appFrame { border-radius: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>GuruKu</span>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a class="menu-item active" onclick="gantiMenu(this, 'dashboard')">
+                    <i class="fas fa-columns"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <a class="menu-item" onclick="gantiMenu(this, 'absensi')">
+                    <i class="fas fa-user-check"></i>
+                    <span>Absensi Siswa</span>
+                </a>
+                
+                <a class="menu-item" onclick="gantiMenu(this, 'ujian')">
+                    <i class="fas fa-file-signature"></i>
+                    <span>Ujianku</span>
+                </a>
+                
+                <a class="menu-item" onclick="gantiMenu(this, 'mojar')">
+                    <i class="fas fa-book-open"></i>
+                    <span>Buat Mojar</span>
+                </a>
+                
+                <a class="menu-item" onclick="gantiMenu(this, 'soal')">
+                    <i class="fas fa-pen-to-square"></i>
+                    <span>Buat Soal</span>
+                </a>
+
+                <a class="menu-item" style="margin-top: auto;" onclick="gantiMenu(this, 'pengaturan')">
+                    <i class="fas fa-cog"></i>
+                    <span>Pengaturan</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="mobile-header">
+                <button class="menu-toggle-btn" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span>GuruKu</span>
+            </header>
+
+            <div class="content-body">
+                <iframe id="appFrame" src="dashboard.html" title="Modul Aplikasi GuruKu"></iframe>
+            </div>
+        </main>
+
+    </div>
+
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const iframe = document.getElementById('appFrame');
+
+        // Fungsi membuka/menutup sidebar di HP
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        menuToggle.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+
+        // Simulasi ID Guru dari sistem login utama
+        const USER_UID = "GURU_DEMO_123";
+        
+        // Fungsi navigasi menu untuk mengganti src pada iframe
+        function gantiMenu(elemen, jenisMenu) {
+            // Hapus class 'active' dari semua menu
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            // Tambahkan class 'active' ke menu yang diklik
+            elemen.classList.add('active');
+
+            // Tutup sidebar otomatis jika di HP
+            if(window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+
+            // SELALU HAPUS SRCDOC AGAR SRC BISA TERBACA!
+            iframe.removeAttribute('srcdoc');
+
+            // Ganti target iframe sesuai menu
+            if (jenisMenu === 'dashboard') {
+                iframe.src = "dashboard.html";
+            } else if (jenisMenu === 'absensi') {
+                iframe.src = `absensi.html?uid=${USER_UID}`;
+            } else {
+                // Untuk menu lain, tampilkan halaman dummy sementara menggunakan srcdoc
+                iframe.srcdoc = `
+                    <div style="display:flex; justify-content:center; align-items:center; height:100%; flex-direction:column; font-family: 'Poppins', sans-serif; color: #475569; background: #f8fafc;">
+                        <h2 style="color: #0f172a; margin-bottom: 8px;">Modul ${jenisMenu.toUpperCase()}</h2>
+                        <p>Halaman ini sedang dalam tahap pengembangan.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 4. MENDENGARKAN SINYAL DARI dashboard.html (JIKA TOMBOL PINTASAN DI DASHBOARD DIKLIK)
+        window.addEventListener('message', function(event) {
+            if (event.data.action === 'pindahMenu') {
+                const targetMenu = event.data.menu;
+                const menuTargetElemen = document.querySelector(`[onclick*="'${targetMenu}'"]`);
+                if (menuTargetElemen) {
+                    gantiMenu(menuTargetElemen, targetMenu);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
