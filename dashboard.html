@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Utama - GuruKu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; padding: 20px; }
+        
+        /* Salam Atas */
+        .welcome-box { background: linear-gradient(135deg, #152033, #0f172a); color: white; padding: 25px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .welcome-box h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 5px; }
+        .welcome-box p { color: #94a3b8; font-size: 0.9rem; }
+
+        /* Grid Statistik */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; }
+        .stat-info h3 { font-size: 0.85rem; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-info p { font-size: 1.6rem; font-weight: 600; color: #0f172a; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        .blue { background: #e0f2fe; color: #0284c7; }
+        .green { background: #dcfce7; color: #15803d; }
+        .orange { background: #ffedd5; color: #d97706; }
+
+        /* Konten Utama Grid */
+        .main-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; }
+        .card-title { font-size: 1rem; font-weight: 600; color: #0f172a; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+
+        /* Jadwal List */
+        .schedule-list { display: flex; flex-direction: column; gap: 12px; }
+        .schedule-item { display: flex; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #00b4d8; }
+        .schedule-time { font-size: 0.85rem; font-weight: 600; color: #00b4d8; width: 100px; }
+        .schedule-details h4 { font-size: 0.9rem; color: #1e293b; font-weight: 500; }
+        .schedule-details p { font-size: 0.75rem; color: #64748b; }
+
+        /* Akses Cepat */
+        .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .action-btn { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; text-decoration: none; color: #475569; }
+        .action-btn:hover { background: #00b4d8; color: white; border-color: #00b4d8; transform: translateY(-2px); }
+        .action-btn i { font-size: 1.4rem; margin-bottom: 8px; display: block; }
+        .action-btn span { font-size: 0.85rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="welcome-box">
+        <h1 id="salam">Selamat Mengajar, Bapak/Ibu Guru!</h1>
+        <p>Aplikasi GuruKu siap membantu manajemen kelas Anda hari ini.</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-info"><h3>Total Siswa</h3><p>32</p></div>
+            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-info"><h3>Kelas Aktif</h3><p>3 Kelas</p></div>
+            <div class="stat-icon green"><i class="fas fa-school"></i></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-info"><h3>Hadir Hari Ini</h3><p>94%</p></div>
+            <div class="stat-icon orange"><i class="fas fa-user-check"></i></div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="card">
+            <div class="card-title"><i class="fas fa-calendar-day" style="color:#00b4d8;"></i> Jadwal Mengajar Hari Ini</div>
+            <div class="schedule-list">
+                <div class="schedule-item">
+                    <div class="schedule-time">07:00 - 08:30</div>
+                    <div class="schedule-details">
+                        <h4>Matematika Wajib</h4>
+                        <p>Kelas X-A • Ruang 10</p>
+                    </div>
+                </div>
+                <div class="schedule-item" style="border-left-color: #10b981;">
+                    <div class="schedule-time">09:00 - 10:30</div>
+                    <div class="schedule-details">
+                        <h4>Fisika Dasar</h4>
+                        <p>Kelas XI-MIPA 1 • Laboratorium Fisika</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-bolt" style="color:#eab308;"></i> Akses Cepat</div>
+            <div class="quick-actions">
+                <div class="action-btn" onclick="bukaFiturUtama('absensi')">
+                    <i class="fas fa-user-check"></i>
+                    <span>Scan Absen</span>
+                </div>
+                <div class="action-btn" onclick="bukaFiturUtama('soal')">
+                    <i class="fas fa-pen-to-square"></i>
+                    <span>Buat Soal</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi agar tombol pintas di dalam dashboard bisa memerintahkan halaman induk (GuruKu) pindah menu
+        function bukaFiturUtama(targetMenu) {
+            window.parent.postMessage({ action: 'pindahMenu', menu: targetMenu }, '*');
+        }
+
+        // Mengubah teks salam berdasarkan waktu jam di HP/Laptop
+        const jam = new Date().getHours();
+        const salamTxt = document.getElementById('salam');
+        if (jam < 11) salamTxt.innerText = "Selamat Pagi, Bapak/Ibu Guru! ☀️";
+        else if (jam < 15) salamTxt.innerText = "Selamat Siang, Bapak/Ibu Guru! 🌤️";
+        else if (jam < 19) salamTxt.innerText = "Selamat Sore, Bapak/Ibu Guru! ⛅";
+        else salamTxt.innerText = "Selamat Malam, Bapak/Ibu Guru! 🌙";
+    </script>
+</body>
+</html>
