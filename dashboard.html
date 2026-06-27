@@ -8,9 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <style>
+        /* Gaya CSS Anda tetap sama tidak ada yang diubah */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background-color: #f8fafc; color: #1e293b; padding: 20px; }
         .welcome-box { background: linear-gradient(135deg, #152033, #0f172a); color: white; padding: 25px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -99,91 +100,72 @@
     </div>
 
     <script>
-        console.log("Memulai inisialisasi Firebase...");
-        
-        // Konfigurasi dengan URL Database Server Asia yang BENAR
+        // Konfigurasi Standar Firebase Firestore
         const firebaseConfig = {
             apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
             authDomain: "absensiwajah-ea3d3.firebaseapp.com",
             projectId: "absensiwajah-ea3d3",
             storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
             messagingSenderId: "1054931924470",
-            appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7",
-            // INI YANG DIUBAH:
-            databaseURL: "https://absensiwajah-ea3d3-default-rtdb.asia-southeast1.firebasedatabase.app"
+            appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
         };
         
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        const db = firebase.firestore();
+
+        // Samakan UID dengan yang ada di absensi.html
+        const currentUserUid = "GURU_DEMO_DEFAULT";
+        let totalSiswaDatabase = 0;
 
         function hitungStatistikDashboard() {
-            const siswaRef = database.ref('siswa');
-            
-            console.log("Mencoba mengambil data siswa dari database...");
+            // 1 & 2. Mengambil Total Siswa dan Kelas
+            db.collection("siswa").where("userId", "==", currentUserUid).onSnapshot((snapshot) => {
+                totalSiswaDatabase = snapshot.size;
+                document.getElementById('txtTotalSiswa').innerText = totalSiswaDatabase + " Siswa";
 
-            siswaRef.on('value', (snapshot) => {
-                try {
-                    console.log("Koneksi berhasil! Memeriksa data siswa...");
-                    
-                    if (snapshot.exists()) {
-                        const dataSiswa = snapshot.val();
-                        const arraySiswa = Object.values(dataSiswa);
-                        const totalSiswa = arraySiswa.length;
-
-                        // 1. Tampilkan Total Siswa
-                        document.getElementById('txtTotalSiswa').innerText = totalSiswa + " Siswa";
-
-                        // 2. Hitung Kelas Aktif
-                        const daftarKelasUnik = new Set();
-                        arraySiswa.forEach(siswa => {
-                            if (siswa && siswa.kelas && typeof siswa.kelas === 'string') {
-                                daftarKelasUnik.add(siswa.kelas.toUpperCase().trim());
-                            }
-                        });
-                        document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
-
-                        // 3. Cek Kehadiran Hari Ini (Sinkron dengan logika absensi.html)
-                        const hariIni = new Date().toLocaleDateString('en-CA'); 
-                        const absensiRef = database.ref(`absensi/${hariIni}`);
-                        
-                        absensiRef.on('value', (absenSnapshot) => {
-                            try {
-                                let totalHadir = 0;
-                                if (absenSnapshot.exists()) {
-                                    const dataAbsen = absenSnapshot.val();
-                                    Object.values(dataAbsen).forEach(absen => {
-                                        if (absen && (absen.status === 'Hadir' || absen.status === 'Masuk') && absen.waktu !== '--') {
-                                            totalHadir++;
-                                        }
-                                    });
-                                }
-                                const persentase = totalSiswa > 0 ? Math.round((totalHadir / totalSiswa) * 100) : 0;
-                                document.getElementById('txtHadirHariIni').innerText = persentase + "%";
-                            } catch (e) {
-                                console.error("Error menghitung absen: ", e);
-                            }
-                        });
-
-                    } else {
-                        console.warn("Node 'siswa' masih kosong di database!");
-                        document.getElementById('txtTotalSiswa').innerText = "0 Siswa";
-                        document.getElementById('txtKelasAktif').innerText = "0 Kelas";
-                        document.getElementById('txtHadirHariIni').innerText = "0%";
+                const daftarKelasUnik = new Set();
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.kelas) {
+                        daftarKelasUnik.add(data.kelas.toUpperCase().trim());
                     }
-                } catch (e) {
-                    console.error("Terjadi error internal JavaScript: ", e);
-                    document.getElementById('txtTotalSiswa').innerText = "Error Data";
-                    document.getElementById('txtKelasAktif').innerText = "Error Data";
-                    document.getElementById('txtHadirHariIni').innerText = "Error Data";
-                }
+                });
+                document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
+                
+                hitungKehadiranHariIni(); // Panggil hitung absen setiap kali data siswa berubah
             }, (error) => {
-                console.error("Firebase DITOLAK atau GAGAL TERHUBUNG: ", error);
-                document.getElementById('txtTotalSiswa').innerText = "Akses Ditolak";
-                document.getElementById('txtKelasAktif').innerText = "Akses Ditolak";
-                document.getElementById('txtHadirHariIni').innerText = "Akses Ditolak";
+                console.error("Gagal memuat siswa:", error);
+                document.getElementById('txtTotalSiswa').innerText = "Error";
+                document.getElementById('txtKelasAktif').innerText = "Error";
             });
         }
 
+        function hitungKehadiranHariIni() {
+            // Format tanggal yang digunakan oleh kode absensi.html Anda (id-ID)
+            const tanggalHariIni = new Date().toLocaleDateString('id-ID'); 
+
+            // 3. Menghitung Persentase Kehadiran dari Koleksi Riwayat
+            db.collection("riwayat")
+              .where("userId", "==", currentUserUid)
+              .where("tanggal", "==", tanggalHariIni)
+              .onSnapshot((snapshot) => {
+                let totalHadir = 0;
+                snapshot.forEach(doc => {
+                    const status = doc.data().status;
+                    if (status === 'Hadir' || status === 'Terlambat') {
+                        totalHadir++;
+                    }
+                });
+
+                const persentase = totalSiswaDatabase > 0 ? Math.round((totalHadir / totalSiswaDatabase) * 100) : 0;
+                document.getElementById('txtHadirHariIni').innerText = persentase + "%";
+            }, (error) => {
+                console.error("Gagal memuat riwayat:", error);
+                document.getElementById('txtHadirHariIni').innerText = "Error";
+            });
+        }
+
+        // Jalankan saat halaman dibuka
         hitungStatistikDashboard();
 
         function bukaFiturUtama(targetMenu) {
