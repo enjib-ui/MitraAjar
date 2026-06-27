@@ -16,23 +16,38 @@
         .welcome-box { background: linear-gradient(135deg, #152033, #0f172a); color: white; padding: 25px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .welcome-box h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 5px; }
         .welcome-box p { color: #94a3b8; font-size: 0.9rem; }
+        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; }
         .stat-info h3 { font-size: 0.85rem; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
         .stat-info p { font-size: 1.6rem; font-weight: 600; color: #0f172a; }
         .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        
         .blue { background: #e0f2fe; color: #0284c7; }
         .green { background: #dcfce7; color: #15803d; }
         .orange { background: #ffedd5; color: #d97706; }
+        
         .main-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
         @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; }
+        
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; margin-bottom: 20px; }
         .card-title { font-size: 1rem; font-weight: 600; color: #0f172a; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        
+        /* Desain Bar Kehadiran per Kelas */
+        .class-attendance-list { display: flex; flex-direction: column; gap: 14px; }
+        .class-item { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #f1f5f9; }
+        .class-header { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; }
+        .class-name { color: #1e293b; font-weight: 600; }
+        .class-pct { color: #4f46e5; font-weight: 600; }
+        .progress-bar-bg { background: #e2e8f0; width: 100%; height: 8px; border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { background: linear-gradient(90deg, #4f46e5, #06b6d4); height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+        
         .schedule-list { display: flex; flex-direction: column; gap: 12px; }
         .schedule-item { display: flex; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #00b4d8; }
         .schedule-time { font-size: 0.85rem; font-weight: 600; color: #00b4d8; width: 100px; }
         .schedule-details h4 { font-size: 0.9rem; color: #1e293b; font-weight: 500; }
         .schedule-details p { font-size: 0.75rem; color: #64748b; }
+        
         .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .action-btn { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; text-decoration: none; color: #475569; }
         .action-btn:hover { background: #00b4d8; color: white; border-color: #00b4d8; transform: translateY(-2px); }
@@ -57,116 +72,190 @@
             <div class="stat-icon green"><i class="fas fa-school"></i></div>
         </div>
         <div class="stat-card">
-            <div class="stat-info"><h3>Hadir Hari Ini</h3><p id="txtHadirHariIni">Mencari...</p></div>
+            <div class="stat-info"><h3>Total Hadir Hari Ini</h3><p id="txtHadirHariIni">Mencari...</p></div>
             <div class="stat-icon orange"><i class="fas fa-user-check"></i></div>
         </div>
     </div>
 
     <div class="main-grid">
-        <div class="card">
-            <div class="card-title"><i class="fas fa-calendar-day" style="color:#00b4d8;"></i> Jadwal Mengajar Hari Ini</div>
-            <div class="schedule-list">
-                <div class="schedule-item">
-                    <div class="schedule-time">07:00 - 08:30</div>
-                    <div class="schedule-details">
-                        <h4>Matematika Wajib</h4>
-                        <p>Kelas XI-RPL 1 • Ruang 10</p>
-                    </div>
+        <div class="left-column">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-chart-pie" style="color:#4f46e5;"></i> Kehadiran Per Kelas Hari Ini</div>
+                <div class="class-attendance-list" id="listKehadiranKelas">
+                    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 10px 0;">Mencari data kelas...</div>
                 </div>
-                <div class="schedule-item" style="border-left-color: #10b981;">
-                    <div class="schedule-time">09:00 - 10:30</div>
-                    <div class="schedule-details">
-                        <h4>Fisika Dasar</h4>
-                        <p>Kelas XI-RPL 1 • Laboratorium Komputer</p>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-calendar-day" style="color:#00b4d8;"></i> Jadwal Mengajar Hari Ini</div>
+                <div class="schedule-list">
+                    <div class="schedule-item">
+                        <div class="schedule-time">07:00 - 08:30</div>
+                        <div class="schedule-details">
+                            <h4>Matematika Wajib</h4>
+                            <p>Kelas XI-RPL 1 • Ruang 10</p>
+                        </div>
+                    </div>
+                    <div class="schedule-item" style="border-left-color: #10b981;">
+                        <div class="schedule-time">09:00 - 10:30</div>
+                        <div class="schedule-details">
+                            <h4>Fisika Dasar</h4>
+                            <p>Kelas XI-RPL 1 • Laboratorium Komputer</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-title"><i class="fas fa-bolt" style="color:#eab308;"></i> Akses Cepat</div>
-            <div class="quick-actions">
-                <div class="action-btn" onclick="bukaFiturUtama('absensi')">
-                    <i class="fas fa-user-check"></i>
-                    <span>Scan Absen</span>
-                </div>
-                <div class="action-btn" onclick="bukaFiturUtama('soal')">
-                    <i class="fas fa-pen-to-square"></i>
-                    <span>Buat Soal</span>
+        <div class="right-column">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-bolt" style="color:#eab308;"></i> Akses Cepat</div>
+                <div class="quick-actions">
+                    <div class="action-btn" onclick="bukaFiturUtama('absensi')">
+                        <i class="fas fa-user-check"></i>
+                        <span>Scan Absen</span>
+                    </div>
+                    <div class="action-btn" onclick="bukaFiturUtama('soal')">
+                        <i class="fas fa-pen-to-square"></i>
+                        <span>Buat Soal</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Gunakan konfigurasi bersih ini di dashboard.html Anda
-const firebaseConfig = {
-    apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
-    authDomain: "absensiwajah-ea3d3.firebaseapp.com",
-    projectId: "absensiwajah-ea3d3",
-    storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
-    messagingSenderId: "1054931924470",
-    appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
+            authDomain: "absensiwajah-ea3d3.firebaseapp.com",
+            projectId: "absensiwajah-ea3d3",
+            storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
+            messagingSenderId: "1054931924470",
+            appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
+        };
 
-// Inisialisasi Firebase
-firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-// PAKSA HANYA MEMBUKA FIRESTORE
-const db = firebase.firestore(); 
-        
-        function hitungStatistikDashboard() {
-            db.collection("siswa").onSnapshot((snapshot) => {
-                if (snapshot.empty) {
+        // Variabel global penampung data realtime
+        let dataSiswaGlobal = [];
+
+        function initDashboardRealtime() {
+            // 1. Dengarkan data siswa secara realtime
+            db.collection("siswa").onSnapshot((snapshotSiswa) => {
+                dataSiswaGlobal = [];
+                
+                if (snapshotSiswa.empty) {
                     document.getElementById('txtTotalSiswa').innerText = "0 Siswa";
                     document.getElementById('txtKelasAktif').innerText = "0 Kelas";
-                    document.getElementById('txtHadirHariIni').innerText = "0%";
+                    document.getElementById('txtHadirHariIni').innerText = "0% (0/0)";
+                    document.getElementById('listKehadiranKelas').innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 10px 0;">Tidak ada data siswa.</div>`;
                     return;
                 }
 
-                let totalSiswaDatabase = snapshot.size;
-                document.getElementById('txtTotalSiswa').innerText = totalSiswaDatabase + " Siswa";
+                document.getElementById('txtTotalSiswa').innerText = snapshotSiswa.size + " Siswa";
 
                 const daftarKelasUnik = new Set();
-                snapshot.forEach(doc => {
+                snapshotSiswa.forEach(doc => {
                     const data = doc.data();
                     if (data.kelas) {
-                        daftarKelasUnik.add(data.kelas.toUpperCase().trim());
+                        const namaKelas = data.kelas.toUpperCase().trim();
+                        daftarKelasUnik.add(namaKelas);
+                        dataSiswaGlobal.push({ nama: data.nama, kelas: namaKelas });
                     }
                 });
-                document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
                 
-                hitungKehadiranHariIni(totalSiswaDatabase);
+                document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
+
+                // Jalankan hitungan riwayat setelah data siswa terisi
+                ambilDataRiwayatHariIni();
             }, (error) => {
                 console.error("Gagal memuat data siswa:", error);
             });
         }
 
-        function hitungKehadiranHariIni(totalSiswa) {
-    db.collection("riwayat").onSnapshot((snapshot) => {
-        if (snapshot.empty || totalSiswa === 0) {
-            document.getElementById('txtHadirHariIni').innerText = "0%";
-            return;
+        function ambilDataRiwayatHariIni() {
+            // Samakan format tanggal dengan absensi.html (id-ID)
+            const tanggalHariIni = new Date().toLocaleDateString('id-ID');
+
+            // 2. Dengarkan data riwayat secara realtime
+            db.collection("riwayat").onSnapshot((snapshotRiwayat) => {
+                
+                // Kumpulkan total kehadiran global hari ini
+                let totalHadirGlobal = 0;
+                
+                // Struktur peta untuk menghitung kehadiran per kelas khusus hari ini
+                // Format: { "XI-RPL 1": { totalSiswa: 0, totalHadir: 0 } }
+                const petaKelas = {};
+
+                // Inisialisasi petaKelas berdasarkan data master siswa yang ada
+                dataSiswaGlobal.forEach(siswa => {
+                    if (!petaKelas[siswa.kelas]) {
+                        petaKelas[siswa.kelas] = { totalSiswa: 0, totalHadir: 0 };
+                    }
+                    petaKelas[siswa.kelas].totalSiswa++;
+                });
+
+                // Hitung riwayat yang masuk hari ini
+                snapshotRiwayat.forEach(doc => {
+                    const data = doc.data();
+                    const kelasDoc = data.kelas ? data.kelas.toUpperCase().trim() : "";
+                    
+                    // Filter ketat: Hanya tanggal hari ini dan status Hadir/Terlambat
+                    if (data.tanggal === tanggalHariIni && (data.status === 'Hadir' || data.status === 'Terlambat')) {
+                        totalHadirGlobal++;
+                        
+                        // Tambahkan ke hitungan kelas spesifik jika kelasnya terdaftar
+                        if (petaKelas[kelasDoc]) {
+                            petaKelas[kelasDoc].totalHadir++;
+                        }
+                    }
+                });
+
+                // 3. Update Kotak Statistik Atas (Global)
+                if (dataSiswaGlobal.length > 0) {
+                    const pctGlobal = Math.round((totalHadirGlobal / dataSiswaGlobal.length) * 100);
+                    document.getElementById('txtHadirHariIni').innerText = `${pctGlobal}% (${totalHadirGlobal}/${dataSiswaGlobal.length})`;
+                } else {
+                    document.getElementById('txtHadirHariIni').innerText = "0% (0/0)";
+                }
+
+                // 4. Render UI List Kehadiran Per Kelas secara Otomatis
+                const containerKelas = document.getElementById('listKehadiranKelas');
+                const urutanNamaKelas = Object.keys(petaKelas).sort();
+
+                if (urutanNamaKelas.length === 0) {
+                    containerKelas.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 10px 0;">Belum ada kelas terdaftar.</div>`;
+                    return;
+                }
+
+                let htmlContent = "";
+                urutanNamaKelas.forEach(namaKelas => {
+                    const info = petaKelas[namaKelas];
+                    const persenKelas = info.totalSiswa > 0 ? Math.round((info.totalHadir / info.totalSiswa) * 100) : 0;
+
+                    htmlContent += `
+                        <div class="class-item">
+                            <div class="class-header">
+                                <span class="class-name">Kelas ${namaKelas}</span>
+                                <span class="class-pct">${persenKelas}% (${info.totalHadir}/${info.totalSiswa} Hadir)</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${persenKelas}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                containerKelas.innerHTML = htmlContent;
+
+            }, (error) => {
+                console.error("Gagal memuat data riwayat:", error);
+            });
         }
 
-        let totalHadir = 0;
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            // Menghitung semua status Hadir/Terlambat tanpa memandang tanggal
-            if (data.status === 'Hadir' || data.status === 'Terlambat') {
-                totalHadir++;
-            }
-        });
-
-        const persentase = Math.round((totalHadir / totalSiswa) * 100);
-        document.getElementById('txtHadirHariIni').innerText = persentase + "%";
-    }, (error) => {
-        console.error("Gagal memuat data riwayat:", error);
-    });
-        }
-        
-
-        hitungStatistikDashboard();
+        // Jalankan sistem monitoring terintegrasi saat halaman siap
+        initDashboardRealtime();
 
         function bukaFiturUtama(targetMenu) {
             window.parent.postMessage({ action: 'pindahMenu', menu: targetMenu }, '*');
