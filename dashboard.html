@@ -11,7 +11,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <style>
-        /* Gaya CSS Anda tetap sama tidak ada yang diubah */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background-color: #f8fafc; color: #1e293b; padding: 20px; }
         .welcome-box { background: linear-gradient(135deg, #152033, #0f172a); color: white; padding: 25px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -100,7 +99,6 @@
     </div>
 
     <script>
-        // Konfigurasi Standar Firebase Firestore
         const firebaseConfig = {
             apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
             authDomain: "absensiwajah-ea3d3.firebaseapp.com",
@@ -113,62 +111,57 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Samakan UID dengan yang ada di absensi.html
-        const currentUserUid = "GURU_DEMO_DEFAULT";
-        let totalSiswaDatabase = 0;
-
         function hitungStatistikDashboard() {
-    // Membaca koleksi siswa secara utuh tanpa filter userId/usId
-    db.collection("siswa").onSnapshot((snapshot) => {
-        // Jika database kosong, langsung set ke 0
-        if (snapshot.empty) {
-            document.getElementById('txtTotalSiswa').innerText = "0 Siswa";
-            document.getElementById('txtKelasAktif').innerText = "0 Kelas";
-            document.getElementById('txtHadirHariIni').innerText = "0%";
-            return;
+            db.collection("siswa").onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    document.getElementById('txtTotalSiswa').innerText = "0 Siswa";
+                    document.getElementById('txtKelasAktif').innerText = "0 Kelas";
+                    document.getElementById('txtHadirHariIni').innerText = "0%";
+                    return;
+                }
+
+                let totalSiswaDatabase = snapshot.size;
+                document.getElementById('txtTotalSiswa').innerText = totalSiswaDatabase + " Siswa";
+
+                const daftarKelasUnik = new Set();
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.kelas) {
+                        daftarKelasUnik.add(data.kelas.toUpperCase().trim());
+                    }
+                });
+                document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
+                
+                hitungKehadiranHariIni(totalSiswaDatabase);
+            }, (error) => {
+                console.error("Gagal memuat data siswa:", error);
+            });
         }
 
-        let totalSiswaDatabase = snapshot.size;
-        document.getElementById('txtTotalSiswa').innerText = totalSiswaDatabase + " Siswa";
+        function hitungKehadiranHariIni(totalSiswa) {
+            const tanggalHariIni = new Date().toLocaleDateString('id-ID'); 
 
-        const daftarKelasUnik = new Set();
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.kelas) {
-                daftarKelasUnik.add(data.kelas.toUpperCase().trim());
-            }
-        });
-        document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
-        
-        // Hitung kehadiran hari ini
-        hitungKehadiranHariIni(totalSiswaDatabase);
-    }, (error) => {
-        console.error("Gagal memuat data:", error);
-    });
-}
+            db.collection("riwayat").onSnapshot((snapshot) => {
+                if (snapshot.empty || totalSiswa === 0) {
+                    document.getElementById('txtHadirHariIni').innerText = "0%";
+                    return;
+                }
 
-function hitungKehadiranHariIni(totalSiswa) {
-    const tanggalHariIni = new Date().toLocaleDateString('id-ID'); 
+                let totalHadir = 0;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.tanggal === tanggalHariIni && (data.status === 'Hadir' || data.status === 'Terlambat')) {
+                        totalHadir++;
+                    }
+                });
 
-    // Mengambil semua riwayat tanpa batasan tanggal untuk tes awal
-db.collection("riwayat").onSnapshot((snapshot) => {
-    
+                const persentase = Math.round((totalHadir / totalSiswa) * 100);
+                document.getElementById('txtHadirHariIni').innerText = persentase + "%";
+            }, (error) => {
+                console.error("Gagal memuat data riwayat:", error);
+            });
+        }
 
-        let totalHadir = 0;
-        snapshot.forEach(doc => {
-            const status = doc.data().status;
-            if (status === 'Hadir' || status === 'Terlambat') {
-                totalHadir++;
-            }
-        });
-
-        const persentase = Math.round((totalHadir / totalSiswa) * 100);
-        document.getElementById('txtHadirHariIni').innerText = persentase + "%";
-    });
-}
-
-
-        // Jalankan saat halaman dibuka
         hitungStatistikDashboard();
 
         function bukaFiturUtama(targetMenu) {
