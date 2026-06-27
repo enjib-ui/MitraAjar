@@ -99,19 +99,22 @@
     </div>
 
     <script>
-        const firebaseConfig = {
-  apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
-  authDomain: "absensiwajah-ea3d3.firebaseapp.com",
-  databaseURL: "https://absensiwajah-ea3d3-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "absensiwajah-ea3d3",
-  storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
-  messagingSenderId: "1054931924470",
-  appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
+        // Gunakan konfigurasi bersih ini di dashboard.html Anda
+const firebaseConfig = {
+    apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
+    authDomain: "absensiwajah-ea3d3.firebaseapp.com",
+    projectId: "absensiwajah-ea3d3",
+    storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
+    messagingSenderId: "1054931924470",
+    appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
 };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
 
+// Inisialisasi Firebase
+firebase.initializeApp(firebaseConfig);
+
+// PAKSA HANYA MEMBUKA FIRESTORE
+const db = firebase.firestore(); 
+        
         function hitungStatistikDashboard() {
             db.collection("siswa").onSnapshot((snapshot) => {
                 if (snapshot.empty) {
