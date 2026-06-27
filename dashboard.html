@@ -139,28 +139,28 @@
         }
 
         function hitungKehadiranHariIni(totalSiswa) {
-            const tanggalHariIni = new Date().toLocaleDateString('id-ID'); 
-
-            db.collection("riwayat").onSnapshot((snapshot) => {
-                if (snapshot.empty || totalSiswa === 0) {
-                    document.getElementById('txtHadirHariIni').innerText = "0%";
-                    return;
-                }
-
-                let totalHadir = 0;
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.tanggal === tanggalHariIni && (data.status === 'Hadir' || data.status === 'Terlambat')) {
-                        totalHadir++;
-                    }
-                });
-
-                const persentase = Math.round((totalHadir / totalSiswa) * 100);
-                document.getElementById('txtHadirHariIni').innerText = persentase + "%";
-            }, (error) => {
-                console.error("Gagal memuat data riwayat:", error);
-            });
+    db.collection("riwayat").onSnapshot((snapshot) => {
+        if (snapshot.empty || totalSiswa === 0) {
+            document.getElementById('txtHadirHariIni').innerText = "0%";
+            return;
         }
+
+        let totalHadir = 0;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // Menghitung semua status Hadir/Terlambat tanpa memandang tanggal
+            if (data.status === 'Hadir' || data.status === 'Terlambat') {
+                totalHadir++;
+            }
+        });
+
+        const persentase = Math.round((totalHadir / totalSiswa) * 100);
+        document.getElementById('txtHadirHariIni').innerText = persentase + "%";
+    }, (error) => {
+        console.error("Gagal memuat data riwayat:", error);
+    });
+        }
+        
 
         hitungStatistikDashboard();
 
