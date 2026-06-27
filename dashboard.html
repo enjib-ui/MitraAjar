@@ -150,13 +150,9 @@
 function hitungKehadiranHariIni(totalSiswa) {
     const tanggalHariIni = new Date().toLocaleDateString('id-ID'); 
 
-    db.collection("riwayat")
-      .where("tanggal", "==", tanggalHariIni)
-      .onSnapshot((snapshot) => {
-        if (snapshot.empty || totalSiswa === 0) {
-            document.getElementById('txtHadirHariIni').innerText = "0%";
-            return;
-        }
+    // Mengambil semua riwayat tanpa batasan tanggal untuk tes awal
+db.collection("riwayat").onSnapshot((snapshot) => {
+    
 
         let totalHadir = 0;
         snapshot.forEach(doc => {
