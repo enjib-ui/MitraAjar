@@ -167,12 +167,15 @@
 
         let jadwalMengajarMaster = JSON.parse(localStorage.getItem("guruJadwalMaster")) || defaultJadwalMaster;
 
-        // Mendeteksi parameter URL dari index.html
+        // Memeriksa parameter URL untuk menentukan halaman mana yang aktif
         const urlParams = new URLSearchParams(window.location.search);
         const viewParam = urlParams.get('view');
         if (viewParam === 'jadwal') {
             document.getElementById('sub-dashboard').classList.remove('active');
             document.getElementById('sub-jadwal').classList.add('active');
+        } else {
+            document.getElementById('sub-jadwal').classList.remove('active');
+            document.getElementById('sub-dashboard').classList.add('active');
         }
 
         function renderFormKelolaJadwal() {
