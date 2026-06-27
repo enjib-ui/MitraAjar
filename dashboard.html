@@ -6,6 +6,10 @@
     <title>Dashboard Utama - GuruKu</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background-color: #f8fafc; color: #1e293b; padding: 20px; }
@@ -56,15 +60,15 @@
 
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-info"><h3>Total Siswa</h3><p>32</p></div>
+            <div class="stat-info"><h3>Total Siswa</h3><p id="txtTotalSiswa">Mencari...</p></div>
             <div class="stat-icon blue"><i class="fas fa-users"></i></div>
         </div>
         <div class="stat-card">
-            <div class="stat-info"><h3>Kelas Aktif</h3><p>3 Kelas</p></div>
+            <div class="stat-info"><h3>Kelas Aktif</h3><p id="txtKelasAktif">Mencari...</p></div>
             <div class="stat-icon green"><i class="fas fa-school"></i></div>
         </div>
         <div class="stat-card">
-            <div class="stat-info"><h3>Hadir Hari Ini</h3><p>94%</p></div>
+            <div class="stat-info"><h3>Hadir Hari Ini</h3><p id="txtHadirHariIni">Mencari...</p></div>
             <div class="stat-icon orange"><i class="fas fa-user-check"></i></div>
         </div>
     </div>
@@ -106,12 +110,92 @@
     </div>
 
     <script>
-        // Fungsi agar tombol pintas di dalam dashboard bisa memerintahkan halaman induk (GuruKu) pindah menu
+        // ========================================================
+        // KONFIGURASI FIREBASE AKTIF (UPDATE BERHASIL)
+        // ========================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
+            authDomain: "absensiwajah-ea3d3.firebaseapp.com",
+            projectId: "absensiwajah-ea3d3",
+            storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
+            messagingSenderId: "1054931924470",
+            appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7",
+            // Menggunakan default URL Realtime Database Firebase
+            databaseURL: "https://absensiwajah-ea3d3-default-rtdb.firebaseio.com"
+        };
+        
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Mengambil Parameter UID Guru dari url utama
+        const urlParams = new URLSearchParams(window.location.search);
+        const USER_UID = urlParams.get('uid') || "GURU_DEMO_123";
+
+        // ========================================================
+        // LOGIKA AMBIL DATA REALTIME DARI DATABASE FIREBASE
+        // ========================================================
+        function hitungStatistikDashboard() {
+            // Membaca data node 'siswa' di Firebase Anda
+            const siswaRef = database.ref('siswa');
+
+            siswaRef.on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const dataSiswa = snapshot.val();
+                    const arraySiswa = Object.values(dataSiswa);
+
+                    // A. Total Siswa
+                    const totalSiswa = arraySiswa.length;
+                    document.getElementById('txtTotalSiswa').innerText = totalSiswa + " Siswa";
+
+                    // B. Kelas Aktif (Mendeteksi total kelas unik)
+                    const daftarKelasUnik = new Set();
+                    arraySiswa.forEach(siswa => {
+                        if (siswa.kelas) {
+                            daftarKelasUnik.add(siswa.kelas);
+                        }
+                    });
+                    document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
+
+                    // C. Hitung Kehadiran Hari Ini
+                    const hariIni = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                    const absensiRef = database.ref(`absensi/${hariIni}`);
+
+                    absensiRef.on('value', (absenSnapshot) => {
+                        let totalHadir = 0;
+                        if (absenSnapshot.exists()) {
+                            const dataAbsen = absenSnapshot.val();
+                            Object.values(dataAbsen).forEach(absen => {
+                                if (absen.status === 'Hadir' || absen.status === 'Masuk' || absen.waktu) {
+                                    totalHadir++;
+                                }
+                            });
+                        }
+
+                        // Rumus Persentase Kehadiran
+                        const persentase = totalSiswa > 0 ? Math.round((totalHadir / totalSiswa) * 100) : 0;
+                        document.getElementById('txtHadirHariIni').innerText = persentase + "%";
+                    });
+
+                } else {
+                    document.getElementById('txtTotalSiswa').innerText = "0 Siswa";
+                    document.getElementById('txtKelasAktif').innerText = "0 Kelas";
+                    document.getElementById('txtHadirHariIni').innerText = "0%";
+                }
+            }, (error) => {
+                console.error("Firebase Error: ", error);
+            });
+        }
+
+        // Jalankan sinkronisasi
+        hitungStatistikDashboard();
+
+        // Fungsi navigasi ke file induk (GuruKu.html)
         function bukaFiturUtama(targetMenu) {
             window.parent.postMessage({ action: 'pindahMenu', menu: targetMenu }, '*');
         }
 
-        // Mengubah teks salam berdasarkan waktu jam di HP/Laptop
+        // Mengubah teks salam berdasarkan waktu jam
         const jam = new Date().getHours();
         const salamTxt = document.getElementById('salam');
         if (jam < 11) salamTxt.innerText = "Selamat Pagi, Bapak/Ibu Guru! ☀️";
