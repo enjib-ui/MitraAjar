@@ -107,7 +107,7 @@
 
         .menu-toggle-btn { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; }
 
-        /* --- KONTEN TOP BAR (BARU) --- */
+        /* --- KONTEN TOP BAR --- */
         .content-topbar {
             display: flex;
             justify-content: space-between;
@@ -128,7 +128,7 @@
             font-size: 0.85rem;
             font-weight: 500;
             cursor: pointer;
-            display: none; /* Default tersembunyi */
+            display: none; 
             align-items: center;
             gap: 8px;
             box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
@@ -188,6 +188,11 @@
                 <a class="menu-item active" onclick="gantiMenu(this, 'dashboard')">
                     <i class="fas fa-columns"></i>
                     <span>Dashboard</span>
+                </a>
+
+                <a class="menu-item" onclick="gantiMenu(this, 'jadwal')">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Jadwal Mengajar</span>
                 </a>
 
                 <a class="menu-item" onclick="gantiMenu(this, 'absensi')">
@@ -257,9 +262,8 @@
         sidebarOverlay.addEventListener('click', toggleSidebar);
 
         const USER_UID = "GURU_DEMO_123";
-        const LINK_UJIAN = "https://ujianku-1.netlify.app/"; // Link Ujianku Netlify
+        const LINK_UJIAN = "https://ujianku-1.netlify.app/"; 
         
-        // Fungsi Navigasi Menu
         function gantiMenu(elemen, jenisMenu) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             elemen.classList.add('active');
@@ -269,25 +273,24 @@
             }
 
             iframe.removeAttribute('srcdoc');
-
-            // Default: Sembunyikan tombol share setiap ganti menu
             btnShare.style.display = "none";
 
             if (jenisMenu === 'dashboard') {
                 pageTitle.innerText = "Dashboard";
                 iframe.src = "dashboard.html";
+            } else if (jenisMenu === 'jadwal') {
+                pageTitle.innerText = "Kelola Jadwal Mengajar";
+                // Membuka dashboard.html langsung ke bagian form edit jadwal
+                iframe.src = "dashboard.html?view=jadwal";
             } else if (jenisMenu === 'absensi') {
                 pageTitle.innerText = "Absensi Siswa";
                 iframe.src = `absensi.html?uid=${USER_UID}`;
             } else if (jenisMenu === 'ujian') {
                 pageTitle.innerText = "Ujianku";
                 iframe.src = LINK_UJIAN;
-                
-                // BARU: Tampilkan tombol share hanya saat membuka menu Ujianku
                 btnShare.style.display = "flex";
-                btnShareText.innerText = "Salin Link Ujian"; // Reset teks tombol
+                btnShareText.innerText = "Salin Link Ujian"; 
             } else {
-                // Menu tahap pengembangan
                 pageTitle.innerText = jenisMenu.toUpperCase();
                 iframe.srcdoc = `
                     <div style="display:flex; justify-content:center; align-items:center; height:100%; flex-direction:column; font-family: 'Poppins', sans-serif; color: #475569; background: #f8fafc;">
@@ -298,28 +301,25 @@
             }
         }
 
-        // BARU: Fungsi untuk menyalin link ke clipboard HP / Laptop
         function salinLinkUjian() {
             navigator.clipboard.writeText(LINK_UJIAN).then(() => {
-                // Animasi teks sukses saat berhasil disalin
                 btnShareText.innerText = "Link Berhasil Disalin! ✓";
-                
-                // Kembalikan teks asli setelah 2.5 detik
-                setTimeout(() => {
-                    btnShareText.innerText = "Salin Link Ujian";
-                }, 2500);
+                setTimeout(() => { btnShareText.innerText = "Salin Link Ujian"; }, 2500);
             }).catch(err => {
                 alert("Gagal menyalin link: ", err);
             });
         }
 
-        // Event listener dari dashboard pintasan
         window.addEventListener('message', function(event) {
             if (event.data.action === 'pindahMenu') {
                 const targetMenu = event.data.menu;
-                const menuTargetElemen = document.querySelector(`[onclick*="'${targetMenu}'"]`);
-                if (menuTargetElemen) {
-                    gantiMenu(menuTargetElemen, targetMenu);
+                // Dukungan khusus navigasi antar halaman internal iframe
+                if (targetMenu === 'jadwal') {
+                    const menuTargetElemen = document.querySelector(`[onclick*="'jadwal'"]`);
+                    if (menuTargetElemen) gantiMenu(menuTargetElemen, 'jadwal');
+                } else {
+                    const menuTargetElemen = document.querySelector(`[onclick*="'${targetMenu}'"]`);
+                    if (menuTargetElemen) gantiMenu(menuTargetElemen, targetMenu);
                 }
             }
         });
