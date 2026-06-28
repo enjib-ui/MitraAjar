@@ -24,11 +24,6 @@
 </head>
 <body class="bg-slate-100 text-slate-900">
 
-    <div id="loading-overlay" class="fixed inset-0 bg-slate-100 flex flex-col items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600 mb-4"></div>
-        <p class="text-sm font-semibold text-slate-600">Memverifikasi sesi keamanan...</p>
-    </div>
-
     <nav class="bg-indigo-900 text-white shadow-lg no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
             
@@ -51,9 +46,6 @@
                 </button>
                 <button onclick="window.print()" class="flex-1 sm:flex-none bg-gray-700 hover:bg-gray-600 px-3 py-2.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-center">
                     Cetak
-                </button>
-                <button onclick="logout()" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-center text-red-400 font-bold">
-                    Keluar
                 </button>
             </div>
 
@@ -177,51 +169,7 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-
-        // Konfigurasi Firebase Anda
-        const firebaseConfig = {
-            apiKey: "AIzaSyBiHKwvqo0y1VY3dHJlS7G7PmC8_1qPLS8",
-            authDomain: "akmpro-c45ff.firebaseapp.com",
-            projectId: "akmpro-c45ff",
-            storageBucket: "akmpro-c45ff.firebasestorage.app",
-            messagingSenderId: "937163486934",
-            appId: "1:937163486934:web:271a8b3af5eb362d93fb77",
-            measurementId: "G-8RGSS3GFB4"
-        };
-
-        // Inisialisasi Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // --- SISTEM PROTEKSI KEAMANAN: CEK STATUS LOGIN ---
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                localStorage.removeItem('akm_login_status');
-                localStorage.removeItem('akm_user_email');
-                window.location.href = "login.html";
-            } else {
-                document.getElementById('loading-overlay').classList.add('hidden');
-            }
-        });
-
-        // --- FUNGSI TOMBOL KELUAR (LOGOUT) ---
-        async function logout() {
-            if (confirm("Apakah Anda yakin ingin keluar dari aplikasi?")) {
-                try {
-                    await signOut(auth);
-                    localStorage.removeItem('akm_login_status');
-                    localStorage.removeItem('akm_user_email');
-                    window.location.href = "https://akmpro-1.netlify.app/";
-                } catch (error) {
-                    console.error("Gagal melakukan proses logout: ", error);
-                    alert("Gagal keluar dari server. Coba lagi.");
-                }
-            }
-        }
-
+    <script>
         // =========================================================================
         // LOGIKA CORE APLIKASI AKM BUILDER PRO
         // =========================================================================
@@ -583,7 +531,6 @@
         window.setMode = setMode;
         window.generateBulkAI = generateBulkAI;
         window.hapusSoal = hapusSoal;
-        window.logout = logout;
 
         muatDariLokal();
     </script>
