@@ -12,82 +12,115 @@
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: #f8fafc; color: #1e293b; padding: 10px; }
         
-        .welcome-box { background: linear-gradient(135deg, #152033, #0f172a); color: white; padding: 25px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .welcome-box h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 5px; }
-        .welcome-box p { color: #94a3b8; font-size: 0.9rem; }
+        /* Layout Utama - Dibuat 100vh agar pas di layar tanpa scroll page */
+        body { 
+            background-color: #f8fafc; color: #1e293b; padding: 10px; 
+            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+        }
         
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: white; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; }
-        .stat-info h3 { font-size: 0.85rem; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
-        .stat-info p { font-size: 1.6rem; font-weight: 600; color: #0f172a; }
-        .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        #sub-dashboard { display: flex; flex-direction: column; height: 100%; width: 100%; }
+        
+        /* Welcome Box - Diperkecil padding & font */
+        .welcome-box { 
+            background: linear-gradient(135deg, #152033, #0f172a); color: white; 
+            padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); flex-shrink: 0;
+        }
+        .welcome-box h1 { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+        .welcome-box p { color: #94a3b8; font-size: 0.75rem; }
+        
+        /* Stats Grid - Menjadi 3 kolom langsung di HP */
+        .stats-grid { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; 
+            margin-bottom: 10px; flex-shrink: 0; 
+        }
+        .stat-card { 
+            background: white; padding: 8px; border-radius: 10px; 
+            display: flex; flex-direction: column; align-items: center; text-align: center; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; gap: 4px;
+        }
+        .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .stat-info h3 { font-size: 0.6rem; color: #64748b; text-transform: uppercase; white-space: nowrap; }
+        .stat-info p { font-size: 1rem; font-weight: 600; color: #0f172a; line-height: 1; }
         
         .blue { background: #e0f2fe; color: #0284c7; }
         .green { background: #dcfce7; color: #15803d; }
         .orange { background: #ffedd5; color: #d97706; }
         
-        /* Ubah tata letak menjadi 2 kolom sama besar */
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
+        /* Main Grid - Membagi sisa layar secara vertikal pada HP */
+        .main-grid { 
+            display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; 
+            gap: 10px; flex-grow: 1; min-height: 0; 
+        }
+        @media (min-width: 768px) {
+            .main-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+        }
         
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; margin-bottom: 20px; height: fit-content; }
-        .card-title { font-size: 1rem; font-weight: 600; color: #0f172a; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .card { 
+            background: white; padding: 12px; border-radius: 12px; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); border: 1px solid #e2e8f0; 
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .card-title { font-size: 0.85rem; font-weight: 600; color: #0f172a; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;}
         
-        .class-attendance-list { display: flex; flex-direction: column; gap: 14px; }
-        .class-item { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #f1f5f9; }
-        .class-header { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; }
+        /* Custom Scrollbar agar terlihat elegan jika data penuh */
+        .scrollable-list { flex-grow: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 8px; }
+        .scrollable-list::-webkit-scrollbar { width: 4px; }
+        .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Item Kehadiran */
+        .class-item { background: #f8fafc; padding: 8px 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
+        .class-header { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 500; margin-bottom: 5px; }
         .class-name { color: #1e293b; font-weight: 600; }
         .class-pct { color: #4f46e5; font-weight: 600; }
-        .progress-bar-bg { background: #e2e8f0; width: 100%; height: 8px; border-radius: 10px; overflow: hidden; }
+        .progress-bar-bg { background: #e2e8f0; width: 100%; height: 6px; border-radius: 10px; overflow: hidden; }
         .progress-bar-fill { background: linear-gradient(90deg, #4f46e5, #06b6d4); height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
         
-        .schedule-list { display: flex; flex-direction: column; gap: 12px; }
-        .schedule-item { display: flex; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #00b4d8; }
-        .schedule-time { font-size: 0.85rem; font-weight: 600; color: #00b4d8; width: 110px; }
-        .schedule-details h4 { font-size: 0.9rem; color: #1e293b; font-weight: 500; }
-        .schedule-details p { font-size: 0.75rem; color: #64748b; }
+        /* Item Jadwal */
+        .schedule-item { display: flex; align-items: center; padding: 8px 10px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #00b4d8; gap: 10px;}
+        .schedule-time { font-size: 0.75rem; font-weight: 600; color: #00b4d8; width: 85px; flex-shrink: 0; }
+        .schedule-details h4 { font-size: 0.8rem; color: #1e293b; font-weight: 600; margin-bottom: 2px;}
+        .schedule-details p { font-size: 0.65rem; color: #64748b; }
     </style>
 </head>
 <body>
 
     <div id="sub-dashboard">
         <div class="welcome-box">
-            <h1 id="salam">Selamat Mengajar, Bapak/Ibu Guru!</h1>
-            <p>Aplikasi GuruKu siap membantu manajemen kelas Anda hari ini.</p>
+            <h1 id="salam">Selamat Mengajar!</h1>
+            <p>Manajemen kelas Anda hari ini.</p>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-info"><h3>Total Siswa</h3><p id="txtTotalSiswa">Mencari...</p></div>
                 <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                <div class="stat-info"><h3>Total Siswa</h3><p id="txtTotalSiswa">...</p></div>
             </div>
             <div class="stat-card">
-                <div class="stat-info"><h3>Kelas Aktif</h3><p id="txtKelasAktif">Mencari...</p></div>
                 <div class="stat-icon green"><i class="fas fa-school"></i></div>
+                <div class="stat-info"><h3>Kelas Aktif</h3><p id="txtKelasAktif">...</p></div>
             </div>
             <div class="stat-card">
-                <div class="stat-info"><h3>Total Hadir Hari Ini</h3><p id="txtHadirHariIni">Mencari...</p></div>
                 <div class="stat-icon orange"><i class="fas fa-user-check"></i></div>
+                <div class="stat-info"><h3>Hadir (%)</h3><p id="txtHadirHariIni">...</p></div>
             </div>
         </div>
 
         <div class="main-grid">
             <div class="card">
-                <div class="card-title"><i class="fas fa-chart-pie" style="color:#4f46e5;"></i> Kehadiran Per Kelas Hari Ini</div>
-                <div class="class-attendance-list" id="listKehadiranKelas">
-                    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 10px 0;">Mencari data kelas...</div>
+                <div class="card-title"><i class="fas fa-chart-pie" style="color:#4f46e5;"></i> Kehadiran Per Kelas</div>
+                <div class="scrollable-list" id="listKehadiranKelas">
+                    <div style="text-align: center; color: #94a3b8; font-size: 0.75rem; padding: 10px 0;">Mencari data kelas...</div>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-title">
-                    <i class="fas fa-calendar-day" style="color:#00b4d8;"></i> 
-                    Jadwal Mengajar Hari Ini (<span id="lblHariIni">-</span>)
+                    <i class="fas fa-calendar-day" style="color:#00b4d8;"></i> Jadwal (<span id="lblHariIni">-</span>)
                 </div>
-                <div class="schedule-list" id="listJadwalHariIni">
-                    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 15px 0;">Tidak ada jadwal mengajar untuk hari ini.</div>
+                <div class="scrollable-list" id="listJadwalHariIni">
+                    <div style="text-align: center; color: #94a3b8; font-size: 0.75rem; padding: 10px 0;">Tidak ada jadwal hari ini.</div>
                 </div>
             </div>
         </div>
@@ -108,10 +141,9 @@
 
         let dataSiswaGlobal = [];
         
-        // Data jadwal default yang statis
         const defaultJadwalMaster = {
-            "Senin": [{ jam: "07:00 - 08:30", mapel: "Matematika Wajib", kelas: "XI-RPL 1", ruang: "Ruang 10" }],
-            "Selasa": [{ jam: "09:00 - 10:30", mapel: "Fisika Dasar", kelas: "XI-RPL 1", ruang: "Laboratorium Komputer" }],
+            "Senin": [{ jam: "07:00 - 08:30", mapel: "Mat. Wajib", kelas: "XI-RPL 1", ruang: "R. 10" }],
+            "Selasa": [{ jam: "09:00 - 10:30", mapel: "Fisika Dasar", kelas: "XI-RPL 1", ruang: "Lab. Komp" }],
             "Rabu": [], "Kamis": [], "Jumat": [], "Sabtu": []
         };
 
@@ -125,7 +157,7 @@
             const jadwalHariIni = jadwalMengajarMaster[hariSistemIndo] || [];
 
             if (jadwalHariIni.length === 0) {
-                container.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 15px 0;">Tidak ada jadwal mengajar hari ${hariSistemIndo}.</div>`;
+                container.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 0.75rem; padding: 10px 0;">Tidak ada jadwal mengajar hari ${hariSistemIndo}.</div>`;
                 return;
             }
 
@@ -136,7 +168,7 @@
                     <div class="schedule-item" style="border-left-color: ${warna};">
                         <div class="schedule-time" style="color: ${warna};">${item.jam || '-'}</div>
                         <div class="schedule-details">
-                            <h4>${item.mapel || 'Mata Pelajaran'}</h4>
+                            <h4>${item.mapel || 'Mapel'}</h4>
                             <p>Kelas ${item.kelas || '-'} • ${item.ruang || 'Ruang'}</p>
                         </div>
                     </div>
@@ -148,12 +180,12 @@
             db.collection("siswa").onSnapshot((snapshotSiswa) => {
                 dataSiswaGlobal = [];
                 if (snapshotSiswa.empty) {
-                    document.getElementById('txtTotalSiswa').innerText = "0 Siswa";
-                    document.getElementById('txtKelasAktif').innerText = "0 Kelas";
-                    document.getElementById('txtHadirHariIni').innerText = "0% (0/0)";
+                    document.getElementById('txtTotalSiswa').innerText = "0";
+                    document.getElementById('txtKelasAktif').innerText = "0";
+                    document.getElementById('txtHadirHariIni').innerText = "0%";
                     return;
                 }
-                document.getElementById('txtTotalSiswa').innerText = snapshotSiswa.size + " Siswa";
+                document.getElementById('txtTotalSiswa').innerText = snapshotSiswa.size;
                 const daftarKelasUnik = new Set();
                 snapshotSiswa.forEach(doc => {
                     const data = doc.data();
@@ -163,7 +195,7 @@
                         dataSiswaGlobal.push({ nama: data.nama, kelas: namaKelas });
                     }
                 });
-                document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size + " Kelas";
+                document.getElementById('txtKelasAktif').innerText = daftarKelasUnik.size;
                 ambilDataRiwayatHariIni();
             });
         }
@@ -190,7 +222,7 @@
 
                 if (dataSiswaGlobal.length > 0) {
                     const pctGlobal = Math.round((totalHadirGlobal / dataSiswaGlobal.length) * 100);
-                    document.getElementById('txtHadirHariIni').innerText = `${pctGlobal}% (${totalHadirGlobal}/${dataSiswaGlobal.length})`;
+                    document.getElementById('txtHadirHariIni').innerText = `${pctGlobal}%`;
                 }
 
                 const containerKelas = document.getElementById('listKehadiranKelas');
@@ -202,7 +234,7 @@
                     const persenKelas = info.totalSiswa > 0 ? Math.round((info.totalHadir / info.totalSiswa) * 100) : 0;
                     htmlContent += `
                         <div class="class-item">
-                            <div class="class-header"><span class="class-name">Kelas ${namaKelas}</span><span class="class-pct">${persenKelas}%</span></div>
+                            <div class="class-header"><span class="class-name">Kls ${namaKelas}</span><span class="class-pct">${persenKelas}%</span></div>
                             <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${persenKelas}%;"></div></div>
                         </div>
                     `;
@@ -216,10 +248,10 @@
 
         const jam = new Date().getHours();
         const salamTxt = document.getElementById('salam');
-        if (jam < 11) salamTxt.innerText = "Selamat Pagi, Bapak/Ibu Guru! ☀️";
-        else if (jam < 15) salamTxt.innerText = "Selamat Siang, Bapak/Ibu Guru! 🌤️";
-        else if (jam < 19) salamTxt.innerText = "Selamat Sore, Bapak/Ibu Guru! ⛅";
-        else salamTxt.innerText = "Selamat Malam, Bapak/Ibu Guru! 🌙";
+        if (jam < 11) salamTxt.innerText = "Selamat Pagi! ☀️";
+        else if (jam < 15) salamTxt.innerText = "Selamat Siang! 🌤️";
+        else if (jam < 19) salamTxt.innerText = "Selamat Sore! ⛅";
+        else salamTxt.innerText = "Selamat Malam! 🌙";
     </script>
 </body>
 </html>
