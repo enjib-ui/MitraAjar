@@ -384,6 +384,9 @@
                 iframe.src = LINK_UJIAN;
                 btnShare.style.display = "flex";
                 btnShareText.innerText = "Salin Link Ujian"; 
+            } else if (jenisMenu === 'soal') {
+                pageTitle.innerText = "Buat Soal AI";
+                iframe.src = "buatsoal.html";
             } else {
                 pageTitle.innerText = jenisMenu.toUpperCase();
                 iframe.srcdoc = `
