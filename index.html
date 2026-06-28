@@ -280,8 +280,102 @@
                 iframe.src = "dashboard.html";
             } else if (jenisMenu === 'jadwal') {
                 pageTitle.innerText = "Kelola Jadwal Mengajar";
-                // Membuka dashboard.html langsung ke bagian form edit jadwal
-                iframe.src = "dashboard.html?view=jadwal";
+                // Menyuntikkan form UI Pengaturan Jadwal langsung ke dalam Iframe (Tanpa perlu membuat file html terpisah)
+                iframe.srcdoc = `
+                    <!DOCTYPE html>
+                    <html lang="id">
+                    <head>
+                        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+                        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+                        <style>
+                            body { font-family: 'Poppins', sans-serif; background: #f8fafc; padding: 20px; color: #1e293b; margin: 0;}
+                            .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; }
+                            .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+                            .btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; color: white; display: inline-flex; gap: 8px; align-items: center; transition: 0.2s;}
+                            .btn-success { background: #10b981; } .btn-success:hover { background: #059669; }
+                            .btn-primary { background: #00b4d8; padding: 6px 12px; font-size: 0.8rem;} .btn-primary:hover { background: #0096b4; }
+                            .btn-danger { background: #ef4444; padding: 10px; } .btn-danger:hover { background: #dc2626; }
+                            .day-section { margin-bottom: 20px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 15px; }
+                            .day-title { font-weight: 600; color: #0369a1; background: #e0f2fe; display: inline-block; padding: 6px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9rem;}
+                            .form-row { display: grid; grid-template-columns: 1fr 1.5fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; align-items: center; }
+                            @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+                            input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 0.85rem; outline: none; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 style="font-size: 1.1rem; margin:0;"><i class="fas fa-edit" style="color:#00b4d8;"></i> Atur Jadwal Mengajar Mingguan</h3>
+                                <button class="btn btn-success" onclick="simpanJadwal()"><i class="fas fa-save"></i> Simpan Perubahan</button>
+                            </div>
+                            <div id="editor-container"></div>
+                        </div>
+                        <script>
+                            const defaultJadwal = {
+                                "Senin": [{ jam: "07:00 - 08:30", mapel: "Matematika Wajib", kelas: "XI-RPL 1", ruang: "Ruang 10" }],
+                                "Selasa": [{ jam: "09:00 - 10:30", mapel: "Fisika Dasar", kelas: "XI-RPL 1", ruang: "Laboratorium Komputer" }],
+                                "Rabu": [], "Kamis": [], "Jumat": [], "Sabtu": []
+                            };
+                            let jadwalData = JSON.parse(localStorage.getItem("guruJadwalMaster")) || defaultJadwal;
+                            const hariList = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+                            
+                            function render() {
+                                const container = document.getElementById('editor-container');
+                                container.innerHTML = '';
+                                hariList.forEach(hari => {
+                                    let rowsHtml = '';
+                                    (jadwalData[hari] || []).forEach((item, idx) => {
+                                        rowsHtml += '<div class="form-row" id="row-' + hari + '-' + idx + '">' +
+                                            '<input type="text" placeholder="Jam (cth: 07:00-08:30)" value="' + item.jam + '" data-field="jam">' +
+                                            '<input type="text" placeholder="Mata Pelajaran" value="' + item.mapel + '" data-field="mapel">' +
+                                            '<input type="text" placeholder="Kelas" value="' + item.kelas + '" data-field="kelas">' +
+                                            '<input type="text" placeholder="Ruang" value="' + item.ruang + '" data-field="ruang">' +
+                                            '<button class="btn btn-danger" onclick="hapusBaris(\\'' + hari + '\\', ' + idx + ')"><i class="fas fa-trash"></i></button>' +
+                                        '</div>';
+                                    });
+                                    container.innerHTML += '<div class="day-section">' +
+                                        '<div class="day-title">' + hari + '</div>' +
+                                        '<div id="container-' + hari + '">' + rowsHtml + '</div>' +
+                                        '<button class="btn btn-primary" onclick="tambahBaris(\\'' + hari + '\\')"><i class="fas fa-plus"></i> Tambah Jam</button>' +
+                                    '</div>';
+                                });
+                            }
+
+                            function tambahBaris(hari) {
+                                if(!jadwalData[hari]) jadwalData[hari] = [];
+                                jadwalData[hari].push({jam: "", mapel: "", kelas: "", ruang: ""});
+                                render();
+                            }
+
+                            function hapusBaris(hari, idx) {
+                                jadwalData[hari].splice(idx, 1);
+                                render();
+                            }
+
+                            function simpanJadwal() {
+                                hariList.forEach(hari => {
+                                    const rows = document.querySelectorAll('#container-' + hari + ' .form-row');
+                                    const newData = [];
+                                    rows.forEach(row => {
+                                        const jam = row.querySelector('[data-field="jam"]').value;
+                                        const mapel = row.querySelector('[data-field="mapel"]').value;
+                                        const kelas = row.querySelector('[data-field="kelas"]').value;
+                                        const ruang = row.querySelector('[data-field="ruang"]').value;
+                                        if(jam || mapel || kelas) newData.push({jam, mapel, kelas, ruang});
+                                    });
+                                    jadwalData[hari] = newData;
+                                });
+                                localStorage.setItem("guruJadwalMaster", JSON.stringify(jadwalData));
+                                alert("✨ Jadwal berhasil diperbarui!");
+                                
+                                // Memberi sinyal ke file induk agar mengembalikan menu ke "Dashboard"
+                                window.parent.postMessage({ action: 'pindahMenu', menu: 'dashboard' }, '*');
+                            }
+                            render();
+                        <\/script>
+                    </body>
+                    </html>
+                `;
             } else if (jenisMenu === 'absensi') {
                 pageTitle.innerText = "Absensi Siswa";
                 iframe.src = `absensi.html?uid=${USER_UID}`;
@@ -310,16 +404,13 @@
             });
         }
 
+        // Menerima perintah dari dalam Iframe untuk pindah menu otomatis
         window.addEventListener('message', function(event) {
             if (event.data.action === 'pindahMenu') {
                 const targetMenu = event.data.menu;
-                // Dukungan khusus navigasi antar halaman internal iframe
-                if (targetMenu === 'jadwal') {
-                    const menuTargetElemen = document.querySelector(`[onclick*="'jadwal'"]`);
-                    if (menuTargetElemen) gantiMenu(menuTargetElemen, 'jadwal');
-                } else {
-                    const menuTargetElemen = document.querySelector(`[onclick*="'${targetMenu}'"]`);
-                    if (menuTargetElemen) gantiMenu(menuTargetElemen, targetMenu);
+                const menuTargetElemen = document.querySelector(`[onclick*="'${targetMenu}'"]`);
+                if (menuTargetElemen) {
+                    gantiMenu(menuTargetElemen, targetMenu);
                 }
             }
         });
