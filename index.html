@@ -387,6 +387,9 @@
             } else if (jenisMenu === 'soal') {
                 pageTitle.innerText = "Buat Soal AI";
                 iframe.src = "buatsoal.html";
+            } else if (jenisMenu === 'mojar') {
+                pageTitle.innerText = "Buat Modul Ajar (Mojar)";
+                iframe.src = "mojar.html";
             } else {
                 pageTitle.innerText = jenisMenu.toUpperCase();
                 iframe.srcdoc = `
