@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modul Absensi Wajah AI - GuruKu</title>
+
+    <script>
+    // --- PROTEKSI HALAMAN (ROUTE GUARD) ---
+    try {
+        // 1. Cek apakah dibuka langsung (tidak di dalam iframe)
+        // 2. Cek apakah Firebase di file utama ada
+        // 3. Cek apakah ada pengguna yang sedang login di file utama
+        if (window === window.parent || !window.parent.firebase || !window.parent.firebase.auth().currentUser) {
+            // Jika melanggar, tendang paksa ke halaman login utama
+            window.top.location.href = "index.html"; 
+        }
+    } catch (e) {
+        // Antisipasi jika ada error cross-origin, langsung tendang ke halaman login
+        window.top.location.href = "index.html";
+    }
+    </script>
     
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
