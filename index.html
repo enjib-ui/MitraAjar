@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GuruKu - Dashboard</title>
+    <title>Mitra Ajar - Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
@@ -60,10 +60,12 @@
             margin-bottom: 35px;
         }
 
-        .login-header i {
-            font-size: 3rem;
-            color: var(--accent-color);
-            margin-bottom: 10px;
+        /* 🛠️ TAMBAHAN: Styling untuk Logo Gambar di Halaman Login */
+        .login-logo {
+            max-width: 140px; /* Atur lebar maksimal logo */
+            height: auto;
+            margin-bottom: 15px;
+            display: inline-block;
         }
 
         .login-header h2 {
@@ -289,7 +291,7 @@
     <div class="login-wrapper" id="loginView">
         <div class="login-card">
             <div class="login-header">
-                <i class="fas fa-graduation-cap"></i>
+                <img src="logo.jpg" alt="Logo Mitra Ajar" class="login-logo">
                 <h2>Mitra Ajar</h2>
                 <p>Silakan login</p>
             </div>
@@ -434,8 +436,6 @@
                 loginView.style.display = "flex";
                 loginError.style.display = "none";
                 document.getElementById('loginForm').reset();
-                
-                // 🛠️ DIUBAH: Pastikan iframe bersih saat user logout demi memutus loop
                 iframe.src = "about:blank";
             }
         });
