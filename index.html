@@ -141,8 +141,7 @@
 
         /* Container Utama Dasbor */
         .app-container {
-            display: none; /* Disembunyikan sebelum login sukses */
-            flex-content: row;
+            display: none;
             min-height: 100vh;
             position: relative;
         }
@@ -154,6 +153,9 @@
             color: var(--text-color);
             display: flex;
             flex-direction: column;
+            height: 100vh; /* Memastikan tinggi konstan agar tombol terbawah berfungsi optimal */
+            position: sticky;
+            top: 0;
             transition: all 0.3s ease;
             z-index: 100;
         }
@@ -354,7 +356,7 @@
                     <span>Pengaturan</span>
                 </a>
 
-                <a class="menu-item" style="margin-top: auto; color: #f87171;" onclick="prosesLogout()">
+                <a class="menu-item" style="margin-top: auto; color: #f87171; background: rgba(239, 68, 68, 0.03);" onclick="prosesLogout()">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Keluar Akun</span>
                 </a>
@@ -385,16 +387,15 @@
 
     <script>
         // --- CONFIGURASI FIREBASE ---
-        // Ganti objek konfigurasi di bawah ini dengan kredensial aplikasi Firebase Proyek Anda sendiri.
         const firebaseConfig = {
-  apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
-  authDomain: "absensiwajah-ea3d3.firebaseapp.com",
-  databaseURL: "https://absensiwajah-ea3d3-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "absensiwajah-ea3d3",
-  storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
-  messagingSenderId: "1054931924470",
-  appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
-};
+            apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
+            authDomain: "absensiwajah-ea3d3.firebaseapp.com",
+            databaseURL: "https://absensiwajah-ea3d3-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "absensiwajah-ea3d3",
+            storageBucket: "absensiwajah-ea3d3.firebasestorage.app",
+            messagingSenderId: "1054931924470",
+            appId: "1:1054931924470:web:01d5770b6cedd7bbff03d7"
+        };
 
         // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
@@ -418,19 +419,16 @@
         let USER_UID = "";
         const LINK_UJIAN = "https://ujianku-1.netlify.app/"; 
 
-        // --- AUTH STATE OBSERVER (Memantau Status Log In/Out secara Real-time) ---
+        // --- AUTH STATE OBSERVER ---
         auth.onAuthStateChanged((user) => {
             if (user) {
-                // Pengguna terautentikasi
                 USER_UID = user.uid;
                 loginView.style.display = "none";
                 dashboardView.style.display = "flex";
                 
-                // Set default halaman awal dasbor saat masuk kembali
                 const defaultActiveMenu = document.querySelector('.menu-item.active');
                 gantiMenu(defaultActiveMenu, 'dashboard');
             } else {
-                // Pengguna belum login atau keluar akun
                 USER_UID = "";
                 dashboardView.style.display = "none";
                 loginView.style.display = "flex";
@@ -445,7 +443,6 @@
             const email = document.getElementById('loginEmail').value;
             const sandi = document.getElementById('loginPassword').value;
 
-            // Efek Loading pada Tombol
             btnLoginSubmit.innerText = "Memproses...";
             btnLoginSubmit.disabled = true;
             loginError.style.display = "none";
@@ -460,7 +457,6 @@
                     btnLoginSubmit.disabled = false;
                     loginError.style.display = "block";
                     
-                    // Terjemahan Pesan Error Firebase yang Umum
                     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                         loginError.innerText = "Kombinasi email atau kata sandi salah. Harap periksa kembali.";
                     } else if (error.code === 'auth/invalid-email') {
@@ -492,6 +488,9 @@
         sidebarOverlay.addEventListener('click', toggleSidebar);
         
         function gantiMenu(elemen, jenisMenu) {
+            // Hindari error selektor jika menekan tombol Keluar Akun
+            if(!elemen) return;
+
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             elemen.classList.add('active');
 
@@ -634,7 +633,6 @@
             });
         }
 
-        // Menerima perintah dari dalam Iframe untuk pindah menu otomatis
         window.addEventListener('message', function(event) {
             if (event.data.action === 'pindahMenu') {
                 const targetMenu = event.data.menu;
