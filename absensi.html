@@ -165,6 +165,9 @@
                 </select>
                 <label style="font-size: 0.85rem; font-weight: 600; color: #475569;">Mata Pelajaran:</label>
                 <input type="text" id="setupMapel" placeholder="Contoh: Matematika, B. Inggris...">
+                <label style="font-size: 0.85rem; font-weight: 600; color: #475569;">Batas Waktu Hadir (Jam/Menit):</label>
+                <input type="time" id="setupBatasWaktu" value="07:15">
+                
                 <button class="btn-full btn-green" style="margin-top: 8px;" onclick="mulaiProsesScan()">✨ Mulai Kamera & Scan Kelas</button>
             </div>
         </div>
@@ -286,6 +289,7 @@
         let sesiTanggalIni = ""; 
         let sesiKelasIni = ""; 
         let sesiMapelIni = "";
+        let sesiBatasWaktu = ""; // MENYIMPAN JAM BATAS HADIR, CONTOH: "07:15"
         let siswaTelahAbsenSesiIni = new Set();
         
         let localSiswaCached = [];
@@ -560,9 +564,13 @@
 
             sesiKelasIni = document.getElementById('setupKelas').value;
             sesiMapelIni = document.getElementById('setupMapel').value.trim();
+            
+            // SIMPAN DATA BATAS WAKTU ABSENSI
+            sesiBatasWaktu = document.getElementById('setupBatasWaktu').value;
 
             if(!sesiKelasIni) return alert("Pilih target kelas terlebih dahulu!");
             if(!sesiMapelIni) return alert("Harap isi nama Mata Pelajaran terlebih dahulu!");
+            if(!sesiBatasWaktu) return alert("Harap tentukan Batas Waktu Hadir!");
             
             let adaSiswa = buatFaceMatcherSpesifikKelas(sesiKelasIni);
             if (!adaSiswa) return alert(`Gagal memuat AI. Tidak ditemukan siswa di Kelas ${sesiKelasIni}.`);
@@ -680,30 +688,48 @@
             if(siswaTelahAbsenSesiIni.has(namaSiswa)) return; 
             
             let tanggal = sesiTanggalIni;
-            let waktu = new Date().toLocaleTimeString('id-ID');
+            let sekarang = new Date();
+            let waktu = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-            let dataLamaSiswa = localRiwayatCached.find(item => 
-                item.nama === namaSiswa && item.kelas === sesiKelasIni && item.hari === sesiHariIni && 
-                item.mapel === sesiMapelIni && item.tanggal === tanggal
-            );
+            // LOGIKA PENENTUAN STATUS (HADIR vs TERLAMBAT)
+            let statusSiswa = "Hadir";
+            if (sesiBatasWaktu) {
+                let [batasJam, batasMenit] = sesiBatasWaktu.split(':').map(Number);
+                let jamSekarang = sekarang.getHours();
+                let menitSekarang = sekarang.getMinutes();
 
-            if (dataLamaSiswa) {
-                if (dataLamaSiswa.status === "Tidak Hadir") {
-                    db.collection("riwayat").doc(dataLamaSiswa.id).update({ waktu: waktu, status: "Terlambat" });
+                if (jamSekarang > batasJam || (jamSekarang === batasJam && menitSekarang > batasMenit)) {
+                    statusSiswa = "Terlambat";
+                }
+            }
+
+            // SIMPAN LANGSUNG DENGAN STATUS TERKAIT
+            db.collection("riwayat").add({
+                userId: currentUserUid, 
+                nama: namaSiswa, 
+                kelas: sesiKelasIni, 
+                hari: sesiHariIni, 
+                mapel: sesiMapelIni, 
+                tanggal: tanggal, 
+                waktu: waktu, 
+                status: statusSiswa,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                if (statusSiswa === "Terlambat") {
                     setStatus(`⚠️ TERLAMBAT: ${namaSiswa}`, "#ffedd5", "#c2410c");
                     if(logDiv.innerText.includes("Belum ada")) logDiv.innerHTML = "";
                     logDiv.innerHTML = `<div class="log-item" style="color: #c2410c;"><b>${waktu}</b> - ⚠️ ${namaSiswa} (Terlambat)</div>` + logDiv.innerHTML;
+                } else {
+                    setStatus(`✅ HADIR: ${namaSiswa}`, "#dcfce7", "#166534");
+                    if(logDiv.innerText.includes("Belum ada")) logDiv.innerHTML = "";
+                    logDiv.innerHTML = `<div class="log-item"><b>${waktu}</b> - ${namaSiswa} (Kelas ${sesiKelasIni})</div>` + logDiv.innerHTML;
                 }
-            } else {
-                db.collection("riwayat").add({
-                    userId: currentUserUid, 
-                    nama: namaSiswa, kelas: sesiKelasIni, hari: sesiHariIni, mapel: sesiMapelIni, tanggal: tanggal, waktu: waktu, status: "Hadir",
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                setStatus(`✅ HADIR: ${namaSiswa}`, "#dcfce7", "#166534");
-                if(logDiv.innerText.includes("Belum ada")) logDiv.innerHTML = "";
-                logDiv.innerHTML = `<div class="log-item"><b>${waktu}</b> - ${namaSiswa} (Kelas ${sesiKelasIni})</div>` + logDiv.innerHTML;
-            }
+            })
+            .catch(err => {
+                console.error("Gagal mencatat absensi: ", err);
+            });
+
             siswaTelahAbsenSesiIni.add(namaSiswa);
         }
 
