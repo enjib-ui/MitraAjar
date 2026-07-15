@@ -8,15 +8,10 @@
     <script>
     // --- PROTEKSI HALAMAN (ROUTE GUARD) ---
     try {
-        // 1. Cek apakah dibuka langsung (tidak di dalam iframe)
-        // 2. Cek apakah Firebase di file utama ada
-        // 3. Cek apakah ada pengguna yang sedang login di file utama
         if (window === window.parent || !window.parent.firebase || !window.parent.firebase.auth().currentUser) {
-            // Jika melanggar, tendang paksa ke halaman login utama
             window.top.location.href = "index.html"; 
         }
     } catch (e) {
-        // Antisipasi jika ada error cross-origin, langsung tendang ke halaman login
         window.top.location.href = "index.html";
     }
     </script>
@@ -272,8 +267,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // --- MENDAPATKAN USER ID DARI DASHBOARD GURUKU ---
-        // Jika GuruKu memanggil: <iframe src="absensi.html?uid=12345">
         const urlParams = new URLSearchParams(window.location.search);
         let currentUserUid = urlParams.get('uid') || "GURU_DEMO_DEFAULT"; 
 
@@ -281,7 +274,8 @@
         const statusDiv = document.getElementById('status');
         const logDiv = document.getElementById('logAbsen');
         
-        let tresholdKemiripan = 0.55; 
+        // Diubah menjadi 0.60 agar proses identifikasi lebih fleksibel & akurat di HP Realme
+        let tresholdKemiripan = 0.60; 
         let absensiAktif = false;
         let faceMatcher = null; 
         let intervalScan = null;
@@ -300,10 +294,8 @@
         let listenerSiswa = null;
         let listenerRiwayat = null;
 
-        // VARIABEL WHATSAPP
         let targetWA = localStorage.getItem("waTarget") || "";
 
-        // --- JALANKAN LANGSUNG KETIKA HALAMAN DIBUKA ---
         window.onload = () => {
             initSistemAbsen();
             initWA();
@@ -317,7 +309,6 @@
             if(intervalScan) clearInterval(intervalScan);
         }
 
-        // --- 1. NAVIGASI MENU ---
         function pindahMenu(menuTarget) {
             document.querySelectorAll('.card-panel').forEach(el => el.classList.add('panel-hide'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -356,13 +347,14 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- 2. INISIALISASI AI, FIREBASE & KAMERA ---
+        // --- OPTIMASI UTAMA: MENGGUNAKAN TINY FACE DETECTOR UNTUK PERANGKAT MOBILE ---
         async function initSistemAbsen() { 
-const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             try {
-                setStatus("⏳ Memuat AI & Sinkronisasi Cloud...", "#fef9c3", "#854d0e");
+                setStatus("⏳ Memuat AI Mobile & Cloud Sync...", "#fef9c3", "#854d0e");
                 
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                // Memuat model TinyFaceDetector (Jauh lebih cepat dan ringan dibanding SsdMobilenetv1)
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
                 
@@ -376,7 +368,7 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
                 ambilDataRiwayatRealtime();
                 startCamera();
             } catch (err) {
-                setStatus("❌ Gagal memuat AI: " + err.message, "#fee2e2", "#991b1b");
+                setStatus("❌ Gagal memuat AI Mobile: " + err.message, "#fee2e2", "#991b1b");
             }
         }
 
@@ -439,13 +431,14 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
-            const kriteria = { video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } } };
+            // Mengoptimalkan resolusi video rasio mobile agar tidak membebani proses WebRTC HP Realme
+            const kriteria = { video: { facingMode: currentFacingMode, width: { ideal: 640 }, height: { ideal: 480 } } };
             try {
                 const stream = await navigator.mediaDevices.getUserMedia(kriteria);
                 currentStream = stream;
                 video.srcObject = stream;
             } catch (err) {
-                setStatus("🚨 Kamera tidak ditemukan atau tidak diizinkan!", "#fee2e2", "#991b1b");
+                setStatus("🚨 Kamera tidak ditemukan atau izin ditolak!", "#fee2e2", "#991b1b");
             }
         }
 
@@ -454,7 +447,6 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             startCamera();
         }
 
-        // --- 3. REGISTRASI & MANAGEMENT DROPDOWN KELAS ---
         async function daftarkanWajah() {
             const nama = document.getElementById('namaSiswa').value.trim();
             const kelas = document.getElementById('kelasSiswa').value.trim().toUpperCase();
@@ -462,9 +454,12 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             if (!nama || !kelas) return alert("Masukkan nama siswa dan kelas!");
 
             setStatus("⏳ Memindai wajah...", "#fef9c3", "#854d0e");
-            const deteksi = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+            
+            // Registrasi menggunakan opsi TinyFaceDetector yang dioptimalkan
+            const opsiDeteksi = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 });
+            const deteksi = await faceapi.detectSingleFace(video, opsiDeteksi).withFaceLandmarks().withFaceDescriptor();
 
-            if (!deteksi) return setStatus("⚠️ Gagal! Wajah tidak terdeteksi.", "#fee2e2", "#991b1b");
+            if (!deteksi) return setStatus("⚠️ Gagal! Wajah tidak terdeteksi lurus/jelas.", "#fee2e2", "#991b1b");
 
             let wajahTerdaftar = localSiswaCached.filter(s => s.kelas === kelas);
             if (wajahTerdaftar.length > 0) {
@@ -474,7 +469,7 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
                 
                 if (cocok.label !== 'unknown') {
                     setStatus(`❌ Gagal! Wajah sudah terdaftar di kelas ini: "${cocok.label}"`, "#fee2e2", "#991b1b");
-                    alert(`🚨 PENDAFTARAN DITOLAK!\nWajah ini sudah terdaftar di database Kelas ${kelas} Anda sebagai "${cocok.label}".`);
+                    alert(`🚨 PENDAFTARAN DITOLAK!\nWajah ini sudah ada di database Kelas ${kelas} sebagai "${cocok.label}".`);
                     return;
                 }
             }
@@ -557,7 +552,7 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             return true;
         }
 
-        // --- 4. ENGINE SCAN ABSENSI ---
+        // --- ENGINE PEMINDAIAN YANG SUDAH DIOPTIMALKAN (ANTI LAG & AKURAT) ---
         function mulaiProsesScan() {
             const rawTanggal = document.getElementById('setupTanggal').value;
             if(!rawTanggal) return alert("Pilih tanggal pelaksanaan absensi terlebih dahulu!");
@@ -596,28 +591,43 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
 
             const canvas = faceapi.createCanvasFromMedia(video);
             document.getElementById('video-container').appendChild(canvas);
-            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-            faceapi.matchDimensions(canvas, displaySize);
+            
+            // Konfigurasi awal ukuran canvas render sesuai resolusi elemen visual
+            const ukuranDisplayAwal = { width: video.offsetWidth, height: video.offsetHeight };
+            faceapi.matchDimensions(canvas, ukuranDisplayAwal);
 
+            // Pengaturan parameter performa TinyFaceDetector (inputSize: 160 = Super Cepat di HP Realme)
+            const opsiTinyAI = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 });
+
+            // Interval komputasi diatur ke 1200ms agar ponsel Realme tetap adem & stabil
             intervalScan = setInterval(async () => {
                 if (!absensiAktif) return;
-                const currentSize = { width: video.offsetWidth, height: video.offsetHeight };
-                faceapi.matchDimensions(canvas, currentSize);
+                
+                // Sinkronisasi dinamis ukuran dimensi layar visual
+                const ukuranSekarang = { width: video.offsetWidth, height: video.offsetHeight };
+                faceapi.matchDimensions(canvas, ukuranSekarang);
 
-                const deteksi = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
+                // Proses pemindaian berbasis TinyFaceDetector Mobile
+                const deteksi = await faceapi.detectAllFaces(video, opsiTinyAI)
+                                             .withFaceLandmarks()
+                                             .withFaceDescriptors();
+                
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                const resized = faceapi.resizeResults(deteksi, currentSize);
-                faceapi.draw.drawDetections(canvas, resized);
+                
+                // Penyesuaian presisi koordinat frame deteksi wajah
+                const hasilResized = faceapi.resizeResults(deteksi, ukuranSekarang);
+                faceapi.draw.drawDetections(canvas, hasilResized);
 
-                if(faceMatcher) {
-                    resized.forEach(d => {
+                if(faceMatcher && deteksi.length > 0) {
+                    hasilResized.forEach(d => {
                         const cocok = faceMatcher.findBestMatch(d.descriptor);
-                        if (cocok.label !== 'unknown') {
+                        // Mencocokkan berdasarkan kriteria jarak kedekatan threshold
+                        if (cocok.label !== 'unknown' && cocok.distance <= tresholdKemiripan) {
                             catatKehadiran(cocok.label);
                         }
                     });
                 }
-            }, 1000);
+            }, 1200);
         }
 
         async function hentikanAbsensi() {
@@ -705,7 +715,6 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             siswaTelahAbsenSesiIni.add(namaSiswa);
         }
 
-        // --- 5. FILTER MULTI-LEVEL, TAMPILAN & UTILITY ---
         function setStatus(pesan, bg, color) {
             statusDiv.innerText = pesan; statusDiv.style.background = bg; statusDiv.style.color = color;
         }
@@ -777,8 +786,6 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             }).join('');
         }
 
-        // --- 6. EKSPOR KE WHATSAPP, EXCEL, DAN PDF ---
-
         function initWA() {
             if(targetWA) {
                 document.getElementById('waSetupArea').style.display = 'none';
@@ -792,7 +799,7 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
 
         function kunciWA() {
             const inputTarget = document.getElementById('waTargetInput').value.trim();
-            if(!inputTarget) return alert("Harap masukkan Nomor HP (Misal: 628...) atau Nama Grup terlebih dahulu!");
+            if(!inputTarget) return alert("Harap masukkan Nomor HP atau Nama Grup!");
             
             targetWA = inputTarget;
             localStorage.setItem("waTarget", targetWA);
@@ -808,7 +815,7 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
 
         function kirimKeWA() {
             let dataEkspor = dapatkanDataTerfilter();
-            if (dataEkspor.length === 0) return alert("Tidak ada data riwayat untuk dikirim! Pastikan filter sudah benar.");
+            if (dataEkspor.length === 0) return alert("Tidak ada data riwayat untuk dikirim!");
 
             let hadir = dataEkspor.filter(i => i.status === "Hadir");
             let terlambat = dataEkspor.filter(i => i.status === "Terlambat");
@@ -888,7 +895,7 @@ const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
         }
 
         async function hapusSemuaRiwayat() {
-            if(confirm("Yakin ingin mengosongkan seluruh data riwayat Anda di Cloud secara permanen? Data milik guru lain atau data master siswa tidak akan terpengaruh.")) {
+            if(confirm("Yakin ingin mengosongkan seluruh data riwayat Anda secara permanen?")) {
                 let batch = db.batch();
                 let querySnapshot = await db.collection("riwayat").where("userId", "==", currentUserUid).get();
                 querySnapshot.forEach(doc => batch.delete(doc.ref));
