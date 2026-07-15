@@ -274,8 +274,8 @@
         const statusDiv = document.getElementById('status');
         const logDiv = document.getElementById('logAbsen');
         
-        // Diubah menjadi 0.60 agar proses identifikasi lebih fleksibel & akurat di HP Realme
-        let tresholdKemiripan = 0.60; 
+        // Threshold internal diturunkan ke 0.45 agar AI menolak wajah yang hanya "mirip secara sekilas"
+        let tresholdKemiripan = 0.45; 
         let absensiAktif = false;
         let faceMatcher = null; 
         let intervalScan = null;
@@ -347,13 +347,11 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- OPTIMASI UTAMA: MENGGUNAKAN TINY FACE DETECTOR UNTUK PERANGKAT MOBILE ---
         async function initSistemAbsen() { 
             const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             try {
                 setStatus("⏳ Memuat AI Mobile & Cloud Sync...", "#fef9c3", "#854d0e");
                 
-                // Memuat model TinyFaceDetector (Jauh lebih cepat dan ringan dibanding SsdMobilenetv1)
                 await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
@@ -431,7 +429,6 @@
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
-            // Mengoptimalkan resolusi video rasio mobile agar tidak membebani proses WebRTC HP Realme
             const kriteria = { video: { facingMode: currentFacingMode, width: { ideal: 640 }, height: { ideal: 480 } } };
             try {
                 const stream = await navigator.mediaDevices.getUserMedia(kriteria);
@@ -455,8 +452,8 @@
 
             setStatus("⏳ Memindai wajah...", "#fef9c3", "#854d0e");
             
-            // Registrasi menggunakan opsi TinyFaceDetector yang dioptimalkan
-            const opsiDeteksi = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 });
+            // Menggunakan inputSize: 224 saat pendaftaran agar ekstraksi fitur matriks wajah jauh lebih detail dan unik
+            const opsiDeteksi = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
             const deteksi = await faceapi.detectSingleFace(video, opsiDeteksi).withFaceLandmarks().withFaceDescriptor();
 
             if (!deteksi) return setStatus("⚠️ Gagal! Wajah tidak terdeteksi lurus/jelas.", "#fee2e2", "#991b1b");
@@ -467,7 +464,7 @@
                 const matcherTemp = new faceapi.FaceMatcher(labeledTemp, tresholdKemiripan);
                 const cocok = matcherTemp.findBestMatch(deteksi.descriptor);
                 
-                if (cocok.label !== 'unknown') {
+                if (cocok.label !== 'unknown' && cocok.distance <= tresholdKemiripan) {
                     setStatus(`❌ Gagal! Wajah sudah terdaftar di kelas ini: "${cocok.label}"`, "#fee2e2", "#991b1b");
                     alert(`🚨 PENDAFTARAN DITOLAK!\nWajah ini sudah ada di database Kelas ${kelas} sebagai "${cocok.label}".`);
                     return;
@@ -548,11 +545,11 @@
             if (siswaKelasTarget.length === 0) { faceMatcher = null; return false; }
             
             const labeled = siswaKelasTarget.map(s => new faceapi.LabeledFaceDescriptors(s.nama, [new Float32Array(s.descriptor)]));
+            // Menyematkan threshold ketat (0.45) langsung saat pembuatan instansiasi penilai wajah
             faceMatcher = new faceapi.FaceMatcher(labeled, tresholdKemiripan);
             return true;
         }
 
-        // --- ENGINE PEMINDAIAN YANG SUDAH DIOPTIMALKAN (ANTI LAG & AKURAT) ---
         function mulaiProsesScan() {
             const rawTanggal = document.getElementById('setupTanggal').value;
             if(!rawTanggal) return alert("Pilih tanggal pelaksanaan absensi terlebih dahulu!");
@@ -592,36 +589,31 @@
             const canvas = faceapi.createCanvasFromMedia(video);
             document.getElementById('video-container').appendChild(canvas);
             
-            // Konfigurasi awal ukuran canvas render sesuai resolusi elemen visual
             const ukuranDisplayAwal = { width: video.offsetWidth, height: video.offsetHeight };
             faceapi.matchDimensions(canvas, ukuranDisplayAwal);
 
-            // Pengaturan parameter performa TinyFaceDetector (inputSize: 160 = Super Cepat di HP Realme)
-            const opsiTinyAI = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 });
+            // Dinaikkan ke inputSize: 224 untuk meningkatkan resolusi pemindaian titik wajah (Mencegah Salah Orang)
+            const opsiTinyAI = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
 
-            // Interval komputasi diatur ke 1200ms agar ponsel Realme tetap adem & stabil
             intervalScan = setInterval(async () => {
                 if (!absensiAktif) return;
                 
-                // Sinkronisasi dinamis ukuran dimensi layar visual
                 const ukuranSekarang = { width: video.offsetWidth, height: video.offsetHeight };
                 faceapi.matchDimensions(canvas, ukuranSekarang);
 
-                // Proses pemindaian berbasis TinyFaceDetector Mobile
                 const deteksi = await faceapi.detectAllFaces(video, opsiTinyAI)
                                              .withFaceLandmarks()
                                              .withFaceDescriptors();
                 
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                 
-                // Penyesuaian presisi koordinat frame deteksi wajah
                 const hasilResized = faceapi.resizeResults(deteksi, ukuranSekarang);
                 faceapi.draw.drawDetections(canvas, hasilResized);
 
                 if(faceMatcher && deteksi.length > 0) {
                     hasilResized.forEach(d => {
                         const cocok = faceMatcher.findBestMatch(d.descriptor);
-                        // Mencocokkan berdasarkan kriteria jarak kedekatan threshold
+                        // Filter ganda: Label tidak boleh unknown DAN jarak Euclidean wajib di bawah atau sama dengan threshold ketat
                         if (cocok.label !== 'unknown' && cocok.distance <= tresholdKemiripan) {
                             catatKehadiran(cocok.label);
                         }
