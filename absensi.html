@@ -156,9 +156,6 @@
                 <button class="btn-switch" id="btnSwitchCam" onclick="gantiKamera()">🔄</button>
             </div>
             <div id="status">Menghubungkan ke sistem...</div>
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <button class="btn-full btn-warning" id="btnBukaManual" style="padding: 10px; font-size: 0.85rem; display: none;" onclick="bukaPanelInputManual()">✏️ Koreksi / Input Manual Kelas Ini</button>
-            </div>
             <div class="log-container" id="logAbsen" style="margin-top: 12px;">
                 <div class="log-item" style="color: #94a3b8; text-align: center;">Belum ada aktivitas scan...</div>
             </div>
@@ -190,6 +187,7 @@
                 <input type="time" id="setupBatasWaktu" value="07:15">
                 
                 <button class="btn-full btn-green" style="margin-top: 8px;" onclick="mulaiProsesScan()">✨ Mulai Kamera & Scan Kelas</button>
+                <button class="btn-full btn-warning" id="btnBukaManual" style="margin-top: 4px; padding: 12px; font-size: 0.85rem; display: none;" onclick="bukaPanelInputManual()">✏️ Koreksi / Input Manual Kelas Ini</button>
             </div>
         </div>
 
@@ -717,8 +715,8 @@
             let statusSiswa = "Hadir";
             if (sesiBatasWaktu) {
                 let [batasJam, batasMenit] = sesiBatasWaktu.split(':').map(Number);
-                let jamSekarang = sekarang.getHours();
-                let menitSekarang = bandwidth = sekarang.getMinutes();
+                let jamSekarang = nanoworth = sekarang.getHours();
+                let menitSekarang = sekarang.getMinutes();
 
                 if (jamSekarang > batasJam || (jamSekarang === batasJam && menitSekarang > batasMenit)) {
                     statusSiswa = "Terlambat";
