@@ -114,7 +114,7 @@
             align-items: center; justify-items: center; z-index: 1010; border-top: 1px solid #e2e8f0;
         }
 
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.7 dream; font-weight: 600; cursor: pointer; width: 100%; height: 100%; transition: 0.2s; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.7rem; font-weight: 600; cursor: pointer; width: 100%; height: 100%; transition: 0.2s; }
         .nav-item.active { color: var(--primary); }
         .nav-icon { font-size: 1.3rem; margin-bottom: 2px; }
 
@@ -187,7 +187,6 @@
                 <input type="time" id="setupBatasWaktu" value="07:15">
                 
                 <button class="btn-full btn-green" style="margin-top: 8px;" onclick="mulaiProsesScan()">✨ Mulai Kamera & Scan Kelas</button>
-                <!-- PERBAIKAN: Menghapus display:none agar selalu muncul di bawah tombol hijau -->
                 <button class="btn-full btn-warning" id="btnBukaManual" style="margin-top: 8px; padding: 12px; font-size: 0.85rem;" onclick="bukaPanelInputManualPraScan()">✏️ Koreksi / Input Manual Kelas Ini</button>
             </div>
         </div>
@@ -552,12 +551,12 @@
                         <div class="list-nama">${siswa.nama}</div>
                         <div class="list-meta">Kelas: <b>${siswa.kelas}</b> | ID: ${siswa.id.substring(0,6)}...</div>
                     </div>
-                    <button class="btn-action btn-danger" onclick="hapusSiswa('${siswa.id}', '${siswa.nama}')">Hapus</button>
+                    <button class="btn-action btn-danger" onclick="removeSiswa('${siswa.id}', '${siswa.nama}')">Hapus</button>
                 </div>
             `).join('');
         }
 
-        function hapusSiswa(id, nama) {
+        function removeSiswa(id, nama) {
             if (confirm(`Hapus permanen data ${nama} dari Database Anda?`)) {
                 db.collection("siswa").doc(id).delete()
                 .catch(err => alert("Gagal menghapus: " + err.message));
@@ -593,6 +592,12 @@
             if (!adaSiswa) return alert(`Gagal memuat AI. Tidak ditemukan siswa di Kelas ${sesiKelasIni}.`);
 
             siswaTelahAbsenSesiIni.clear(); 
+            localRiwayatCached.forEach(item => {
+                if (item.kelas === sesiKelasIni && item.mapel === sesiMapelIni && item.tanggal === sesiTanggalIni) {
+                    siswaTelahAbsenSesiIni.add(item.nama);
+                }
+            });
+
             pindahMenu('home'); 
 
             absensiAktif = true;
@@ -672,7 +677,7 @@
 
                 siswaKelasIni.forEach(siswa => {
                     let dataAda = localRiwayatCached.some(item => 
-                        item.nama === siswa.nama && item.kelas === sesiKelasIni && item.hari === sesiHariIni && 
+                        item.nama === siswa.nama && item.kelas === sesiKelasIni && 
                         item.mapel === sesiMapelIni && item.tanggal === tanggal
                     );
 
@@ -702,6 +707,16 @@
         function catatKehadiran(namaSiswa) {
             if(siswaTelahAbsenSesiIni.has(namaSiswa)) return; 
             
+            let sudahAbsenHariIni = localRiwayatCached.some(item => 
+                item.nama === namaSiswa && item.kelas === sesiKelasIni && 
+                item.mapel === sesiMapelIni && item.tanggal === sesiTanggalIni
+            );
+            
+            if (sudahAbsenHariIni) {
+                siswaTelahAbsenSesiIni.add(namaSiswa);
+                return;
+            }
+
             let tanggal = sesiTanggalIni;
             let sekarang = new Date();
             let waktu = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -716,6 +731,8 @@
                     statusSiswa = "Terlambat";
                 }
             }
+
+            siswaTelahAbsenSesiIni.add(namaSiswa); 
 
             db.collection("riwayat").add({
                 userId: currentUserUid, 
@@ -740,13 +757,11 @@
                 }
             })
             .catch(err => {
+                siswaTelahAbsenSesiIni.delete(namaSiswa); 
                 console.error("Gagal mencatat absensi: ", err);
             });
-
-            siswaTelahAbsenSesiIni.add(namaSiswa);
         }
 
-        // --- FUNGSI BARU: MEMPROSES SEBELUM MASUK KE PANEL MANUAL ---
         function bukaPanelInputManualPraScan() {
             const rawTanggal = document.getElementById('setupTanggal').value;
             if(!rawTanggal) return alert("Pilih tanggal terlebih dahulu!");
@@ -909,13 +924,26 @@
                             <div class="list-nama">👤 ${item.nama}</div>
                             <div class="list-meta">${item.hari}, ${item.tanggal} | Jam: ${item.waktu}</div>
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-                            <span style="font-size:0.75rem; background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-weight:600;">Kelas ${item.kelas} - ${item.mapel}</span>
-                            <span style="font-size:0.65rem; padding:2px 6px; border-radius:4px; font-weight:700; ${badgeStyle}">${item.status.toUpperCase()}</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span style="font-size:0.75rem; background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-weight:600;">Kelas ${item.kelas} - ${item.mapel}</span>
+                                <span style="font-size:0.65rem; padding:2px 6px; border-radius:4px; font-weight:700; ${badgeStyle}">${item.status.toUpperCase()}</span>
+                            </div>
+                            <button class="btn-action btn-danger" style="padding: 6px 8px; border-radius: 6px;" onclick="hapusRiwayatPerSiswa('${item.id}', '${item.nama}')" title="Hapus absensi siswa ini">🗑️</button>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function hapusRiwayatPerSiswa(id, nama) {
+            if (confirm(`Hapus data absensi untuk ${nama} dari daftar ini?`)) {
+                db.collection("riwayat").doc(id).delete()
+                .then(() => {
+                    setStatus(`🗑️ Berhasil menghapus absensi ${nama}`, "#fee2e2", "#991b1b");
+                })
+                .catch(err => alert("Gagal menghapus data: " + err.message));
+            }
         }
 
         function initWA() {
