@@ -114,7 +114,7 @@
             align-items: center; justify-items: center; z-index: 1010; border-top: 1px solid #e2e8f0;
         }
 
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.7rem; font-weight: 600; cursor: pointer; width: 100%; height: 100%; transition: 0.2s; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.7 dream; font-weight: 600; cursor: pointer; width: 100%; height: 100%; transition: 0.2s; }
         .nav-item.active { color: var(--primary); }
         .nav-icon { font-size: 1.3rem; margin-bottom: 2px; }
 
@@ -167,7 +167,7 @@
                 <button class="btn-action btn-danger" onclick="tutupPanelInputManual()">Kembali</button>
             </div>
             <div style="font-size: 0.8rem; background: #e0f2fe; padding: 8px; border-radius: 6px; color: #0369a1; border: 1px dashed #7dd3fc; margin-bottom: 12px;" id="manualInfoSesi">
-                Sesi tidak aktif. Harap mulai scan kelas terlebih dahulu.
+                Silakan pilih kelas terlebih dahulu di menu persiapan.
             </div>
             <div class="list-container" id="manualSiswaList"></div>
         </div>
@@ -187,7 +187,8 @@
                 <input type="time" id="setupBatasWaktu" value="07:15">
                 
                 <button class="btn-full btn-green" style="margin-top: 8px;" onclick="mulaiProsesScan()">✨ Mulai Kamera & Scan Kelas</button>
-                <button class="btn-full btn-warning" id="btnBukaManual" style="margin-top: 4px; padding: 12px; font-size: 0.85rem; display: none;" onclick="bukaPanelInputManual()">✏️ Koreksi / Input Manual Kelas Ini</button>
+                <!-- PERBAIKAN: Menghapus display:none agar selalu muncul di bawah tombol hijau -->
+                <button class="btn-full btn-warning" id="btnBukaManual" style="margin-top: 8px; padding: 12px; font-size: 0.85rem;" onclick="bukaPanelInputManualPraScan()">✏️ Koreksi / Input Manual Kelas Ini</button>
             </div>
         </div>
 
@@ -276,7 +277,6 @@
     </nav>
 
     <script>
-        // --- KONFIGURASI FIREBASE CLOUD FIRESTORE SAJA ---
         const firebaseConfig = {
           apiKey: "AIzaSyD0nWqWCqesIXpnSyLK4Aj9n0gPCaSdGGs",
           authDomain: "absensiwajah-ea3d3.firebaseapp.com",
@@ -596,9 +596,6 @@
             pindahMenu('home'); 
 
             absensiAktif = true;
-            
-            // Tampilkan tombol input manual
-            document.getElementById('btnBukaManual').style.display = 'block';
 
             const navScan = document.getElementById('navScan');
             navScan.classList.add('active-scan');
@@ -663,9 +660,6 @@
             document.getElementById('video-container').classList.remove('fullscreen-camera');
             document.getElementById('status').classList.remove('status-overlay');
             document.getElementById('btnSwitchCam').classList.remove('btn-switch-overlay');
-            
-            // Sembunyikan tombol input manual saat sesi berakhir
-            document.getElementById('btnBukaManual').style.display = 'none';
 
             if (sesiTanggalIni && sesiKelasIni && sesiMapelIni) {
                 let tanggal = sesiTanggalIni;
@@ -715,7 +709,7 @@
             let statusSiswa = "Hadir";
             if (sesiBatasWaktu) {
                 let [batasJam, batasMenit] = sesiBatasWaktu.split(':').map(Number);
-                let jamSekarang = nanoworth = sekarang.getHours();
+                let jamSekarang = sekarang.getHours();
                 let menitSekarang = sekarang.getMinutes();
 
                 if (jamSekarang > batasJam || (jamSekarang === batasJam && menitSekarang > batasMenit)) {
@@ -752,11 +746,21 @@
             siswaTelahAbsenSesiIni.add(namaSiswa);
         }
 
-        // --- FUNGSI BARU: LOGIKA INPUT MANUAL ABSENSI ---
-        function bukaPanelInputManual() {
-            if (!sesiKelasIni) return alert("Belum ada sesi absensi yang aktif!");
+        // --- FUNGSI BARU: MEMPROSES SEBELUM MASUK KE PANEL MANUAL ---
+        function bukaPanelInputManualPraScan() {
+            const rawTanggal = document.getElementById('setupTanggal').value;
+            if(!rawTanggal) return alert("Pilih tanggal terlebih dahulu!");
+
+            const dateObj = new Date(rawTanggal + "T00:00:00");
+            sesiTanggalIni = dateObj.toLocaleDateString('id-ID'); 
+            sesiHariIni = dateObj.toLocaleDateString('id-ID', { weekday: 'long' }); 
+
+            sesiKelasIni = document.getElementById('setupKelas').value;
+            sesiMapelIni = document.getElementById('setupMapel').value.trim() || "Manual/Tanpa Mapel";
+
+            if(!sesiKelasIni) return alert("Pilih target kelas terlebih dahulu!");
             
-            document.getElementById('panelKamera').classList.add('panel-hide');
+            document.getElementById('panelSetupScan').classList.add('panel-hide');
             document.getElementById('panelInputManual').classList.remove('panel-hide');
             
             document.getElementById('manualInfoSesi').innerHTML = `<b>Sesi Aktif:</b> Kelas ${sesiKelasIni} | ${sesiMapelIni} (${sesiTanggalIni})`;
@@ -765,7 +769,7 @@
 
         function tutupPanelInputManual() {
             document.getElementById('panelInputManual').classList.add('panel-hide');
-            document.getElementById('panelKamera').classList.remove('panel-hide');
+            document.getElementById('panelSetupScan').classList.remove('panel-hide');
         }
 
         function renderListSiswaManual() {
@@ -778,7 +782,6 @@
             }
 
             container.innerHTML = siswaKelasIni.map(siswa => {
-                // Cari apakah siswa sudah discan/diabsen di sesi ini
                 let dataAbsen = localRiwayatCached.find(item => 
                     item.nama === siswa.nama && item.kelas === sesiKelasIni && 
                     item.mapel === sesiMapelIni && item.tanggal === sesiTanggalIni
@@ -787,7 +790,6 @@
                 let statusSekarang = dataAbsen ? dataAbsen.status : "Belum Absen";
                 let riwayatId = dataAbsen ? dataAbsen.id : "";
 
-                // Menentukan warna penanda status
                 let colorStyle = "color: #64748b;";
                 if (statusSekarang === "Hadir") colorStyle = "color: var(--success); font-weight: bold;";
                 if (statusSekarang === "Terlambat") colorStyle = "color: var(--warning); font-weight: bold;";
@@ -819,7 +821,6 @@
             setStatus(`⏳ Memperbarui data ${namaSiswa}...`, "#fef9c3", "#854d0e");
 
             if (riwayatId) {
-                // Jika data sudah ada, lakukan UPDATE status
                 db.collection("riwayat").doc(riwayatId).update({
                     status: statusBaru,
                     waktu: waktuBaru
@@ -828,7 +829,6 @@
                     setStatus(`✅ Berhasil mengubah status ${namaSiswa} ke ${statusBaru}`, "#dcfce7", "#166534");
                 });
             } else {
-                // Jika data belum ada (Belum Absen), lakukan ADD data baru
                 db.collection("riwayat").add({
                     userId: currentUserUid, 
                     nama: namaSiswa, 
@@ -841,7 +841,7 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 })
                 .then(() => {
-                    siswaTehadapiSesiIni = siswaTelahAbsenSesiIni.add(namaSiswa);
+                    siswaTelahAbsenSesiIni.add(namaSiswa);
                     setStatus(`✅ Berhasil mencatat manual ${namaSiswa} (${statusBaru})`, "#dcfce7", "#166534");
                 });
             }
